@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { navLinks } from '../data'
+import WalletButton from './WalletButton'
 
 export default function Nav() {
   const [open, setOpen] = useState(false)
@@ -19,7 +20,9 @@ export default function Nav() {
 
   return (
     <nav className={open ? 'is-open' : ''}>
-      <div className="nav-mark">VINCE</div>
+      <a href="#" className="nav-mark" onClick={close}>
+        VINCE
+      </a>
       <div className="nav-links">
         {navLinks.map((link) => (
           <a key={link.href} href={link.href} onClick={close}>
@@ -27,16 +30,19 @@ export default function Nav() {
           </a>
         ))}
       </div>
-      <button
-        className="nav-burger"
-        aria-label={open ? 'Close menu' : 'Open menu'}
-        aria-expanded={open}
-        onClick={toggle}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
+      <div className="nav-end">
+        <WalletButton />
+        <button
+          className="nav-burger"
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+          onClick={toggle}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </div>
     </nav>
   )
 }

@@ -1,8 +1,8 @@
 export const navLinks = [
   { href: '#work', label: 'Use cases' },
+  { href: '#rail', label: 'Rent agents' },
   { href: '#about', label: 'How it works' },
   { href: '#services', label: 'Features' },
-  { href: '#contact', label: 'Docs' },
 ]
 
 export const projects = [
