@@ -99,25 +99,6 @@ export function useMotion() {
       })
     }
 
-    if (!isTouch) {
-      const track = document.getElementById('moveTrack')
-      if (track) {
-        const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + window.innerWidth * 0.06)
-        gsap.to(track, {
-          x: getScrollAmount,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '.move-section',
-            start: 'top top',
-            end: () => `+=${Math.abs(getScrollAmount())}`,
-            scrub: 1,
-            pin: true,
-            invalidateOnRefresh: true,
-          },
-        })
-      }
-    }
-
     const manifesto = document.getElementById('manifestoText')
     if (manifesto) {
       const words = manifesto.querySelectorAll('.word')

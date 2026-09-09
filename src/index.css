@@ -299,61 +299,6 @@
     .work-head { flex-direction: column; align-items: flex-start; gap: 16px; padding: 0 20px; margin-bottom: 40px; }
   }
 
-  /* ---------- Horizontal scroll section ---------- */
-  .move-section {
-    background: var(--white);
-    color: var(--black);
-    height: 100vh;
-    position: relative;
-  }
-  .move-pin {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .move-title {
-    padding: 0 6vw;
-    font-size: clamp(2rem, 5vw, 4rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 56px;
-  }
-  .move-track {
-    display: flex;
-    gap: 34px;
-    padding-left: 6vw;
-    will-change: transform;
-  }
-  .move-card {
-    flex: 0 0 auto;
-    width: min(58vw, 520px);
-    aspect-ratio: 4/5;
-    background: #d9d7d0;
-    border-radius: 2px;
-    position: relative;
-    overflow: hidden;
-  }
-  .move-card .plate { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
-  .move-card .move-card-label {
-    position: absolute; left: 22px; bottom: 20px;
-    color: #0a0a0a;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(247,246,243,0.82);
-    padding: 6px 10px;
-  }
-  .move-mobile-note { display: none; }
-  @media (max-width: 860px) {
-    .move-section { height: auto; }
-    .move-pin { height: auto; padding: 72px 0 56px; overflow-x: auto; }
-    .move-title { padding: 0 20px; margin-bottom: 28px; }
-    .move-track { transform: none !important; padding-left: 20px; padding-right: 20px; gap: 16px; }
-    .move-card { width: 78vw; }
-  }
-
   /* ---------- Manifesto ---------- */
   .manifesto {
     min-height: 100vh;

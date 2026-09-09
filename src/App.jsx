@@ -2,7 +2,6 @@ import Cursor from './components/Cursor'
 import Nav from './components/Nav'
 import Hero from './components/Hero'
 import UseCases from './components/UseCases'
-import Settled from './components/Settled'
 import Manifesto from './components/Manifesto'
 import About from './components/About'
 import Services from './components/Services'
@@ -25,7 +24,6 @@ export default function App() {
       <main id="main">
         <Hero />
         <UseCases />
-        <Settled />
         <Manifesto />
         <About />
         <Services />

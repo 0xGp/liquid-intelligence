@@ -32,15 +32,6 @@ export const projects = [
   },
 ]
 
-export const plates = [
-  { src: '/assets/gpu-00-marketplace.png', label: '01 — Marketplace' },
-  { src: '/assets/gpu-01-call.png', label: '02 — Call' },
-  { src: '/assets/gpu-02-meter.png', label: '03 — Meter' },
-  { src: '/assets/gpu-03-authorize.png', label: '04 — Authorize' },
-  { src: '/assets/gpu-04-settle.png', label: '05 — Settle' },
-  { src: '/assets/gpu-05-audit.png', label: '06 — Audit trail' },
-]
-
 export const manifesto =
   "A payment isn't a transaction. It's trust. Made instant. Made small enough to happen a thousand times a second, so an agent can ask for exactly what it needs and pay for exactly what it used — nothing invoiced, nothing owed."
 
