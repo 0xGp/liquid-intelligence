@@ -79,11 +79,19 @@
     border-bottom: 1px solid var(--line);
   }
   .nav-mark {
-    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     justify-self: start;
     z-index: 2;
+  }
+  .nav-mark img {
+    height: 28px;
+    width: auto;
+    display: block;
   }
   .nav-links {
     display: flex;
@@ -153,20 +161,21 @@
   }
   @media (max-width: 860px) {
     nav {
+      display: flex;
+      justify-content: space-between;
+      grid-template-columns: none;
       padding: 10px 20px;
       padding-top: max(10px, env(safe-area-inset-top));
       min-height: calc(56px + env(safe-area-inset-top));
     }
     .nav-mark {
-      grid-column: 1 / -1;
-      justify-self: center;
-      font-size: 16px;
+      font-size: 14px;
       letter-spacing: 0.14em;
     }
+    .nav-mark img { height: 24px; }
     .nav-burger { display: flex; }
     .nav-end {
-      grid-column: 3;
-      grid-row: 1;
+      margin-left: auto;
     }
     .wallet-btn { font-size: 11px; padding: 6px 8px; }
     .wallet-btn-chain { display: none; }
@@ -188,7 +197,6 @@
       letter-spacing: -0.02em;
       z-index: 1;
       padding: 0 20px;
-      grid-column: auto;
     }
     nav.is-open .nav-links { display: flex; }
     nav.is-open .nav-links a { color: var(--white); }
@@ -456,6 +464,18 @@
   }
   .footer-col { display: flex; flex-direction: column; gap: 10px; }
   .footer-col a:hover { color: var(--white); }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--white);
+  }
+  .footer-brand img {
+    height: 22px;
+    width: auto;
+    display: block;
+  }
+  .footer-brand strong { font-weight: 700; letter-spacing: 0.06em; }
   .footer-bottom { width: 100%; display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12px; }
   @media (max-width: 860px) { footer { flex-direction: column; padding: 40px 20px 32px; } .footer-bottom { flex-direction: column; gap: 8px; } }
 

@@ -20,8 +20,9 @@ export default function Nav() {
 
   return (
     <nav className={open ? 'is-open' : ''}>
-      <a href="#" className="nav-mark" onClick={close}>
-        VINCE
+      <a href="#" className="nav-mark" onClick={close} aria-label="Vince home">
+        <img src="/assets/logo.png" alt="" />
+        <span>VINCE</span>
       </a>
       <div className="nav-links">
         {navLinks.map((link) => (

@@ -4,7 +4,10 @@ export default function Footer() {
   return (
     <footer>
       <div className="footer-col">
-        <strong style={{ color: 'var(--white)' }}>Vince</strong>
+        <a href="#" className="footer-brand">
+          <img src="/assets/logo.png" alt="" />
+          <strong>Vince</strong>
+        </a>
         <span>A payment rail for AI agents</span>
       </div>
       <div className="footer-col">

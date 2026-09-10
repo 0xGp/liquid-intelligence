@@ -12,9 +12,13 @@ import { robinhoodWallet } from './wallets'
 export const walletConnectProjectId =
   import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '21fef48091f12692cad574a6f7753643'
 
+const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+
 export const wagmiConfig = getDefaultConfig({
   appName: 'Vince',
   appDescription: 'A payment rail for AI agents on Robinhood Chain.',
+  appUrl: appUrl || 'https://vince.app',
+  appIcon: `${appUrl}/assets/logo-square.png`,
   projectId: walletConnectProjectId,
   chains: [robinhood, robinhoodTestnet],
   transports: {
