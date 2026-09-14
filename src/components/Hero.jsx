@@ -11,7 +11,7 @@ export default function Hero() {
       <canvas id="liquidCanvas" ref={canvasRef} aria-hidden="true" />
       <div className="hero-inner">
         <a href="#rail" className="hero-cta" data-hover>
-        0x1f9b6a8fbca92846cd41d0b7205e91268abc0ce5
+        0xea1927a9c502e83f87a1fcfc5addba27c16c90e0
         </a>
         <div className="hero-kicker">A payment rail for AI agents</div>
         <h1 className="hero-headline">
