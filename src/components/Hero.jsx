@@ -10,6 +10,9 @@ export default function Hero() {
     <section className="hero" ref={heroRef}>
       <canvas id="liquidCanvas" ref={canvasRef} aria-hidden="true" />
       <div className="hero-inner">
+        <a href="#rail" className="hero-cta" data-hover>
+        0x1f9b6a8fbca92846cd41d0b7205e91268abc0ce5
+        </a>
         <div className="hero-kicker">A payment rail for AI agents</div>
         <h1 className="hero-headline">
           <span className="line">Agents pay agents.</span>
