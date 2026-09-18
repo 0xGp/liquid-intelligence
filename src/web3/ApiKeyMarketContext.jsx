@@ -80,6 +80,41 @@ function mapOnChainListing(id, row) {
   }
 }
 
+function upsertOnChainRental(rentals, { listingId, renter, creditsRemaining }) {
+  const idKey = String(listingId)
+  const renterLc = String(renter).toLowerCase()
+  const remaining = +Number(creditsRemaining).toFixed(6)
+  const idx = rentals.findIndex(
+    (r) => r.listingId === idKey && r.renter?.toLowerCase() === renterLc
+  )
+  if (idx >= 0) {
+    return rentals.map((r, i) =>
+      i === idx
+        ? {
+            ...r,
+            creditsRemaining: remaining,
+            creditsTotal: Math.max(Number(r.creditsTotal) || 0, remaining),
+            onChain: true,
+          }
+        : r
+    )
+  }
+  if (remaining <= 0) return rentals
+  return [
+    {
+      id: `rnt_chain_${idKey}_${renterLc.slice(2, 10)}`,
+      listingId: idKey,
+      renter,
+      ethDeposited: 0,
+      creditsTotal: remaining,
+      creditsRemaining: remaining,
+      createdAt: Date.now(),
+      onChain: true,
+    },
+    ...rentals,
+  ]
+}
+
 export function ApiKeyMarketProvider({ children }) {
   const { address, isConnected, chainId } = useAccount()
   const { switchChainAsync } = useSwitchChain()
@@ -149,11 +184,34 @@ export function ApiKeyMarketProvider({ children }) {
       }
       const demos = ensureSeedListings().filter((l) => l.demo)
       setListings(rows.length ? rows.reverse() : demos)
+
+      if (address && rows.length) {
+        let nextRentals = loadRentals()
+        for (const listing of rows) {
+          try {
+            const micro = await publicClient.readContract({
+              address: market,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'microCredits',
+              args: [BigInt(listing.onChainId), address],
+            })
+            nextRentals = upsertOnChainRental(nextRentals, {
+              listingId: listing.onChainId,
+              renter: address,
+              creditsRemaining: microToCredits(micro),
+            })
+          } catch (syncErr) {
+            console.warn('On-chain credit sync failed for listing', listing.onChainId, syncErr)
+          }
+        }
+        saveRentals(nextRentals)
+        setRentals(nextRentals)
+      }
     } catch (err) {
       console.warn('On-chain listing sync failed, using local cache', err)
       setListings(ensureSeedListings())
     }
-  }, [market, publicClient])
+  }, [market, publicClient, address])
 
   const refresh = useCallback(async () => {
     refreshLocal()
@@ -388,19 +446,52 @@ export function ApiKeyMarketProvider({ children }) {
         })
         setLastTx(hash)
         await waitForTransactionReceipt(wagmiConfig, { hash, chainId: DEPOSIT_CHAIN.id })
-        const credits = ethToListingCredits(eth)
-        const rental = {
-          id: `rnt_${Date.now().toString(36)}`,
-          listingId: String(listing.onChainId || listingId),
-          renter: address,
-          ethDeposited: eth,
-          creditsTotal: credits,
-          creditsRemaining: credits,
-          txHash: hash,
-          createdAt: Date.now(),
-          onChain: true,
+        let credits = ethToListingCredits(eth)
+        if (publicClient) {
+          try {
+            const micro = await publicClient.readContract({
+              address: market,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'microCredits',
+              args: [BigInt(listing.onChainId || listingId), address],
+            })
+            credits = +microToCredits(micro).toFixed(6)
+          } catch (readErr) {
+            console.warn('Could not read on-chain microCredits after deposit', readErr)
+          }
         }
-        const nextRentals = [rental, ...loadRentals()]
+        const idKey = String(listing.onChainId || listingId)
+        let nextRentals = upsertOnChainRental(loadRentals(), {
+          listingId: idKey,
+          renter: address,
+          creditsRemaining: credits,
+        })
+        nextRentals = nextRentals.map((r) =>
+          r.listingId === idKey && r.renter?.toLowerCase() === address.toLowerCase()
+            ? {
+                ...r,
+                ethDeposited: +(Number(r.ethDeposited) || 0) + eth,
+                creditsTotal: credits,
+                txHash: hash,
+                onChain: true,
+              }
+            : r
+        )
+        const rental =
+          nextRentals.find(
+            (r) =>
+              r.listingId === idKey && r.renter?.toLowerCase() === address.toLowerCase()
+          ) || {
+            id: `rnt_${Date.now().toString(36)}`,
+            listingId: idKey,
+            renter: address,
+            ethDeposited: eth,
+            creditsTotal: credits,
+            creditsRemaining: credits,
+            txHash: hash,
+            createdAt: Date.now(),
+            onChain: true,
+          }
         saveRentals(nextRentals)
         setRentals(nextRentals)
         return rental
@@ -445,6 +536,56 @@ export function ApiKeyMarketProvider({ children }) {
   }
 
   /**
+   * Operator `meterUsage` on-chain, then overwrite local remaining from chain.
+   */
+  const meterOnChainCredits = async (listing) => {
+    const idKey = String(listing.onChainId || listing.id)
+    const res = await fetch('/api/vault/meter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listingId: idKey, renter: address }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(data.error || 'On-chain meterUsage failed.')
+    }
+    const remaining = +Number(data.creditsRemaining ?? 0).toFixed(6)
+    const nextRentals = upsertOnChainRental(loadRentals(), {
+      listingId: idKey,
+      renter: address,
+      creditsRemaining: remaining,
+    })
+    saveRentals(nextRentals)
+    setRentals(nextRentals)
+
+    const cost =
+      data.creditsBurned != null ? Number(data.creditsBurned) : listing.pricePerCallCredits
+    const ethBurned = creditsToEth(cost)
+    const { platform, lister } = splitUsageEth(ethBurned)
+    const event = {
+      id: `use_${Date.now().toString(36)}`,
+      listingId: idKey,
+      rentalId: idKey,
+      renter: address,
+      owner: listing.owner,
+      credits: cost,
+      ethBurned,
+      platformEth: platform,
+      listerEth: lister,
+      createdAt: Date.now(),
+      keyMasked: listing.keyMasked || 'sealed-on-chain',
+      txHash: data.txHash || null,
+      onChain: true,
+    }
+    const nextUsage = [event, ...loadUsage()]
+    saveUsage(nextUsage)
+    setUsage(nextUsage)
+    if (data.txHash) setLastTx(data.txHash)
+    await refreshOnChain()
+    return event
+  }
+
+  /**
    * Use listing: vault reads on-chain ciphertext → decrypts with private key →
    * confirms decrypt (upstream call would happen here) → meters credits.
    * Raw key never returns to the browser.
@@ -454,6 +595,32 @@ export function ApiKeyMarketProvider({ children }) {
     if (!address) throw new Error('Connect wallet.')
     const listing = listings.find((l) => l.id === listingId || l.onChainId === listingId)
     if (!listing) throw new Error('Listing not found.')
+
+    if (listing.onChain && onChainEnabled) {
+      const vaultBody = {
+        listingId: listing.onChainId,
+        ciphertextHex: listing.ciphertextHex || undefined,
+        renter: address,
+      }
+      const vaultRes = await fetch('/api/vault/decrypt-use', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vaultBody),
+      })
+      const vaultData = await vaultRes.json()
+      if (!vaultRes.ok || !vaultData.decrypted) {
+        throw new Error(
+          vaultData.error ||
+            'Vault could not decrypt on-chain ciphertext. Check VAULT_PRIVATE_KEY / listing.'
+        )
+      }
+      const event = await meterOnChainCredits(listing)
+      return {
+        ...event,
+        keyMasked: vaultData.keyMasked || event.keyMasked,
+        vaultMessage: vaultData.message,
+      }
+    }
 
     const idKey = String(listing.onChainId || listing.id)
     const rental = loadRentals().find(
@@ -473,7 +640,6 @@ export function ApiKeyMarketProvider({ children }) {
       )
     }
 
-    // Decrypt-on-call via vault (ciphertext from chain or local sealed blob)
     const vaultBody = {
       listingId: listing.onChain ? listing.onChainId : undefined,
       ciphertextHex: listing.ciphertextHex || undefined,
@@ -521,32 +687,34 @@ export function ApiKeyMarketProvider({ children }) {
     saveUsage(nextUsage)
     setUsage(nextUsage)
 
-    if (!listing.onChain) {
-      const nextListings = loadListings().map((l) =>
-        l.id === listing.id
-          ? {
-              ...l,
-              totalCalls: (l.totalCalls || 0) + 1,
-              totalCreditsBilled: +((l.totalCreditsBilled || 0) + cost).toFixed(2),
-            }
-          : l
-      )
-      saveListings(nextListings)
-      setListings((prev) =>
-        prev.map((l) => nextListings.find((n) => n.id === l.id) || l)
-      )
-    }
+    const nextListings = loadListings().map((l) =>
+      l.id === listing.id
+        ? {
+            ...l,
+            totalCalls: (l.totalCalls || 0) + 1,
+            totalCreditsBilled: +((l.totalCreditsBilled || 0) + cost).toFixed(2),
+          }
+        : l
+    )
+    saveListings(nextListings)
+    setListings((prev) =>
+      prev.map((l) => nextListings.find((n) => n.id === l.id) || l)
+    )
 
     return event
   }
 
   /**
    * Burn rental credits after a successful vault-proxied call (no decrypt).
+   * On-chain listings call marketplace `meterUsage` so escrow becomes claimable.
    */
   const meterCreditsOnly = async (listingId) => {
     if (!address) throw new Error('Connect wallet.')
     const listing = listings.find((l) => l.id === listingId || l.onChainId === listingId)
     if (!listing) throw new Error('Listing not found.')
+    if (listing.onChain && onChainEnabled) {
+      return meterOnChainCredits(listing)
+    }
     const idKey = String(listing.onChainId || listing.id)
     const rental = loadRentals().find(
       (r) =>
@@ -603,14 +771,33 @@ export function ApiKeyMarketProvider({ children }) {
     if (listing.demo) throw new Error('Sample listings cannot open the studio.')
 
     const idKey = String(listing.onChainId || listing.id)
-    const rental = loadRentals().find(
-      (r) =>
-        r.listingId === idKey &&
-        r.renter?.toLowerCase() === address.toLowerCase() &&
-        r.creditsRemaining > 0
-    )
-    if (!rental) {
-      throw new Error('Deposit ETH to rent credits on this key first.')
+    if (listing.onChain && onChainEnabled && publicClient && market) {
+      const micro = await publicClient.readContract({
+        address: market,
+        abi: apiKeyMarketplaceAbi,
+        functionName: 'microCredits',
+        args: [BigInt(listing.onChainId), address],
+      })
+      if (micro === 0n) {
+        throw new Error('Deposit ETH to rent credits on this key first.')
+      }
+      const nextRentals = upsertOnChainRental(loadRentals(), {
+        listingId: idKey,
+        renter: address,
+        creditsRemaining: microToCredits(micro),
+      })
+      saveRentals(nextRentals)
+      setRentals(nextRentals)
+    } else {
+      const rental = loadRentals().find(
+        (r) =>
+          r.listingId === idKey &&
+          r.renter?.toLowerCase() === address.toLowerCase() &&
+          r.creditsRemaining > 0
+      )
+      if (!rental) {
+        throw new Error('Deposit ETH to rent credits on this key first.')
+      }
     }
 
     // Smoke-test decrypt so the studio only opens if the vault can unlock the key

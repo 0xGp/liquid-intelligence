@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
   if (env.VITE_API_KEY_MARKET_ADDRESS) {
     process.env.VITE_API_KEY_MARKET_ADDRESS = env.VITE_API_KEY_MARKET_ADDRESS
   }
+  if (env.OPERATOR_PRIVATE_KEY) process.env.OPERATOR_PRIVATE_KEY = env.OPERATOR_PRIVATE_KEY
+  if (env.DEPLOYER_PRIVATE_KEY) process.env.DEPLOYER_PRIVATE_KEY = env.DEPLOYER_PRIVATE_KEY
+  if (env.VITE_ROBINHOOD_RPC) process.env.VITE_ROBINHOOD_RPC = env.VITE_ROBINHOOD_RPC
 
   return {
     plugins: [react(), vaultApiPlugin()],

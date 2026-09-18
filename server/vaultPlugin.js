@@ -2,9 +2,10 @@
  * Vite plugin: vault decrypt-on-use + proxy (chat/video) endpoints.
  * Private key from process.env.VAULT_PRIVATE_KEY (never exposed to client).
  */
-import { createPublicClient, http, isAddress, getAddress } from 'viem'
+import { createPublicClient, createWalletClient, http, isAddress, getAddress } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { robinhoodTestnet } from '../src/web3/chain.js'
-import { apiKeyMarketplaceAbi } from '../src/web3/apiKeyMarketplaceAbi.js'
+import { apiKeyMarketplaceAbi, microToCredits } from '../src/web3/apiKeyMarketplaceAbi.js'
 import { openApiKeyServer } from './vaultDecrypt.js'
 
 const UPSTREAM = {
@@ -12,6 +13,29 @@ const UPSTREAM = {
   openai: 'https://api.openai.com',
   kling: 'https://kling3api.com',
   gemini: 'https://generativelanguage.googleapis.com',
+}
+
+function marketRpc() {
+  return process.env.VITE_ROBINHOOD_RPC || robinhoodTestnet.rpcUrls.default.http[0]
+}
+
+function marketPublicClient() {
+  return createPublicClient({
+    chain: robinhoodTestnet,
+    transport: http(marketRpc()),
+  })
+}
+
+function operatorAccount() {
+  const raw = (process.env.OPERATOR_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY || '').trim()
+  if (!raw) return null
+  const pk = raw.startsWith('0x') ? raw : `0x${raw}`
+  if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) return null
+  try {
+    return privateKeyToAccount(pk)
+  } catch {
+    return null
+  }
 }
 
 function readJson(req) {
@@ -48,12 +72,7 @@ async function resolveCiphertext(body) {
   const market = process.env.VITE_API_KEY_MARKET_ADDRESS
 
   if (!cipherHex && listingId != null && market) {
-    const client = createPublicClient({
-      chain: robinhoodTestnet,
-      transport: http(
-        process.env.VITE_ROBINHOOD_RPC || robinhoodTestnet.rpcUrls.default.http[0]
-      ),
-    })
+    const client = marketPublicClient()
     cipherHex = await client.readContract({
       address: getAddress(market),
       abi: apiKeyMarketplaceAbi,
@@ -115,6 +134,7 @@ export function vaultApiPlugin() {
           return send(res, 200, {
             ok: true,
             hasPrivateKey: Boolean(process.env.VAULT_PRIVATE_KEY),
+            hasOperatorKey: Boolean(operatorAccount()),
             market: process.env.VITE_API_KEY_MARKET_ADDRESS || null,
           })
         }
@@ -124,14 +144,14 @@ export function vaultApiPlugin() {
         try {
           const body = await readJson(req)
           const priv = (process.env.VAULT_PRIVATE_KEY || '').trim()
-          if (!priv) {
-            return send(res, 503, {
-              error:
-                'VAULT_PRIVATE_KEY not set on server. Run: node scripts/generate-vault-keys.mjs',
-            })
-          }
 
           if (url.pathname === '/api/vault/decrypt-use') {
+            if (!priv) {
+              return send(res, 503, {
+                error:
+                  'VAULT_PRIVATE_KEY not set on server. Run: node scripts/generate-vault-keys.mjs',
+              })
+            }
             const { apiKey, listingId, keyMasked } = await decryptListingKey(body, priv)
             return send(res, 200, {
               ok: true,
@@ -146,10 +166,105 @@ export function vaultApiPlugin() {
           }
 
           /**
+           * Operator wallet burns on-chain rental credits after a successful
+           * vault-proxied call so lister claimableWei accrues in escrow.
+           * Body: { listingId, renter }
+           */
+          if (url.pathname === '/api/vault/meter') {
+            const market = process.env.VITE_API_KEY_MARKET_ADDRESS
+            if (!market) {
+              return send(res, 503, { error: 'VITE_API_KEY_MARKET_ADDRESS not set' })
+            }
+            const account = operatorAccount()
+            if (!account) {
+              return send(res, 503, {
+                error:
+                  'Set OPERATOR_PRIVATE_KEY (or DEPLOYER_PRIVATE_KEY) to the marketplace operator wallet.',
+              })
+            }
+            if (body.listingId == null || body.listingId === '') {
+              return send(res, 400, { error: 'listingId is required' })
+            }
+            if (!body.renter || !isAddress(body.renter)) {
+              return send(res, 400, { error: 'renter address is required' })
+            }
+
+            const listingId = BigInt(body.listingId)
+            const renter = getAddress(body.renter)
+            const marketAddr = getAddress(market)
+            const publicClient = marketPublicClient()
+            const walletClient = createWalletClient({
+              account,
+              chain: robinhoodTestnet,
+              transport: http(marketRpc()),
+            })
+
+            const listing = await publicClient.readContract({
+              address: marketAddr,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'getListing',
+              args: [listingId],
+            })
+            const priceMicro = listing[5]
+            const active = listing[7]
+            if (!active) {
+              return send(res, 400, { error: 'Listing is not active' })
+            }
+            if (!priceMicro || priceMicro === 0n) {
+              return send(res, 400, { error: 'Listing has no per-call price' })
+            }
+
+            const available = await publicClient.readContract({
+              address: marketAddr,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'microCredits',
+              args: [listingId, renter],
+            })
+            if (available < priceMicro) {
+              return send(res, 400, {
+                error: `Need ${microToCredits(priceMicro)} on-chain credits (you have ${microToCredits(available)}).`,
+              })
+            }
+
+            const hash = await walletClient.writeContract({
+              address: marketAddr,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'meterUsage',
+              args: [listingId, renter, priceMicro],
+            })
+            const receipt = await publicClient.waitForTransactionReceipt({ hash })
+            if (receipt.status !== 'success') {
+              return send(res, 502, { error: 'meterUsage transaction failed', txHash: hash })
+            }
+
+            const remaining = await publicClient.readContract({
+              address: marketAddr,
+              abi: apiKeyMarketplaceAbi,
+              functionName: 'microCredits',
+              args: [listingId, renter],
+            })
+
+            return send(res, 200, {
+              ok: true,
+              txHash: hash,
+              listingId: listingId.toString(),
+              renter,
+              creditsBurned: microToCredits(priceMicro),
+              creditsRemaining: microToCredits(remaining),
+            })
+          }
+
+          /**
            * Proxy a provider request using the decrypted listing key.
            * Body: { listingId|ciphertextHex, provider, path, method?, headers?, body? }
            */
           if (url.pathname === '/api/vault/proxy') {
+            if (!priv) {
+              return send(res, 503, {
+                error:
+                  'VAULT_PRIVATE_KEY not set on server. Run: node scripts/generate-vault-keys.mjs',
+              })
+            }
             const provider = String(body.provider || '').toLowerCase()
             const path = body.path
             if (!provider || !path) {

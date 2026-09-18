@@ -79,6 +79,16 @@ export default function ConfigPanel() {
   const omniMode = 'text'
   const [showCodeModal, setShowCodeModal] = useState(false)
   const [forceFailTest, setForceFailTest] = useState(false)
+  const klingPollGenerationRef = useRef(0)
+
+  useEffect(() => {
+    if (!promptDrawerOpen) {
+      klingPollGenerationRef.current += 1
+    }
+    return () => {
+      klingPollGenerationRef.current += 1
+    }
+  }, [promptDrawerOpen])
 
   // Kling live API — key from env only (no UI paste)
   const klingKey = (import.meta.env.VITE_KLING_API_KEY || '').trim()
@@ -864,6 +874,7 @@ export default function ConfigPanel() {
 
   // Real Kling API Call
   const executeKlingApi = async () => {
+    const pollGeneration = ++klingPollGenerationRef.current
     const viaVault = usingRental && String(activeRental.provider || '').toLowerCase() === 'kling'
     if (!viaVault && !klingKey) {
       setJobState('failed')
@@ -928,9 +939,16 @@ export default function ConfigPanel() {
         ])
         setJobProgress(40)
 
+        const MAX_POLLS = 40
+        const POLL_MS = 5000
         let attempts = 0
-        const pollInterval = setInterval(async () => {
-          attempts++
+        let settled = false
+
+        while (!settled && attempts < MAX_POLLS) {
+          if (klingPollGenerationRef.current !== pollGeneration) return
+          await new Promise((r) => setTimeout(r, POLL_MS))
+          if (klingPollGenerationRef.current !== pollGeneration) return
+          attempts += 1
           try {
             let sData
             if (viaVault) {
@@ -954,7 +972,7 @@ export default function ConfigPanel() {
             ])
 
             if (sData?.data?.status === 'SUCCESS') {
-              clearInterval(pollInterval)
+              settled = true
               const response = sData.data.response
               const resultUrls = Array.isArray(response?.resultUrls)
                 ? response.resultUrls
@@ -997,7 +1015,7 @@ export default function ConfigPanel() {
                 txHash: `0x${taskId.substring(0, 8)}...fe73`,
               })
             } else if (sData?.data?.status === 'FAILED') {
-              clearInterval(pollInterval)
+              settled = true
               setJobState('failed')
               setJobError(`Kling Generation Failed: ${sData.data.error_message || 'Task failed'}`)
             } else {
@@ -1005,8 +1023,19 @@ export default function ConfigPanel() {
             }
           } catch (pollErr) {
             console.error('Polling error:', pollErr)
+            setApiLogs((prev) => [
+              ...prev,
+              `[Polling #${attempts}] error: ${pollErr.message || 'request failed'}`,
+            ])
           }
-        }, 5000)
+        }
+
+        if (klingPollGenerationRef.current !== pollGeneration) return
+        if (!settled) {
+          setJobState('failed')
+          setJobError(`Timed out waiting for Kling video after ${MAX_POLLS} status checks.`)
+          setApiLogs((prev) => [...prev, `✗ Timed out after ${MAX_POLLS} polls`])
+        }
       } else {
         setJobState('failed')
         const errMsg = data.message || 'API Call Failed'
@@ -1019,14 +1048,9 @@ export default function ConfigPanel() {
     }
   }
 
-  // Test mode: render completed MP4 video directly
+  // Test mode: render completed MP4 video directly.
+  // handleGenerate already burned estimatedCost before the failed live call.
   const handleProceedWithSampleVideo = async () => {
-    try {
-      await chargeCredits(estimatedCost)
-    } catch (err) {
-      setJobError(err?.message || 'On-chain credit spend failed.')
-      return
-    }
     setJobState('completed')
     setJobProgress(100)
     setJobResult({
@@ -1144,6 +1168,7 @@ export default function ConfigPanel() {
   }
 
   const handleRetry = () => {
+    klingPollGenerationRef.current += 1
     setJobError(null)
     setJobState('idle')
     setForceFailTest(false)
