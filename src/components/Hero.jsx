@@ -28,7 +28,6 @@ export default function Hero() {
       <div className="hero-inner">
         {!isConnected ? (
           <>
-            <p className="hero-kicker">Payrent</p>
             <h1 className="hero-headline">
               AI infrastructure marketplace
             </h1>

@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { cn } from '@/lib/utils'
 import { primaryNav, isNavActive } from '../../navigation/config'
+import BrandLogo from '../brand/BrandLogo'
 import WalletButton from '../WalletButton'
 import CircleMenu from './CircleMenu'
 import WalletSheet from '../wallet/WalletSheet'
@@ -39,13 +40,7 @@ export default function AppNav() {
             'md:border-white/40 md:bg-white/25 md:shadow-[0_8px_32px_rgba(17,19,24,0.08)] md:backdrop-blur-2xl',
           )}
         >
-          <a
-            href="#"
-            className="relative z-10 justify-self-start ps-3 font-serif text-[20px] tracking-[0.04em] text-foreground sm:text-[22px]"
-            aria-label="Payrent home"
-          >
-            PAYRENT
-          </a>
+          <BrandLogo className="relative z-10 justify-self-start ps-1" />
 
           <nav
             className="relative z-10 hidden items-center gap-1 justify-self-center md:flex"

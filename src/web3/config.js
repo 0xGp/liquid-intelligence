@@ -16,7 +16,7 @@ const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
 /** Robinhood mainnet only — no testnet in the wallet connector. */
 export const wagmiConfig = getDefaultConfig({
-  appName: 'Payrent',
+  appName: 'Liquid Intelligence',
   appDescription: 'AI infrastructure marketplace on Robinhood Chain.',
   appUrl: appUrl || 'https://payrent.app',
   appIcon: `${appUrl}/assets/logo-square.png`,

@@ -1,4 +1,5 @@
 import React from 'react'
+import BrandLogo from '../brand/BrandLogo'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,7 +13,7 @@ const LINKS = [
   { label: 'How it works', href: '#about' },
 ]
 
-const MARQUEE = Array.from({ length: 10 }, () => 'payRENT')
+const MARQUEE = Array.from({ length: 8 }, () => 'Liquid Intelligence')
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
 
 export default function LandingFooter() {
@@ -72,8 +73,8 @@ export default function LandingFooter() {
 
           <div className="flex flex-col gap-6 px-6 py-6 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
             <div>
-              <p className="font-serif text-[22px] tracking-[0.04em] text-foreground">PAYRENT</p>
-              <p className="mt-2 max-w-[34ch] text-[13px] leading-relaxed text-foreground/60">
+              <BrandLogo nameClassName="text-[18px] sm:text-[20px]" />
+              <p className="mt-3 max-w-[34ch] text-[13px] leading-relaxed text-foreground/60">
                 AI infrastructure marketplace with on-chain credits on Robinhood Chain.
               </p>
             </div>
@@ -96,7 +97,7 @@ export default function LandingFooter() {
           </div>
 
           <div className="flex flex-col gap-2 border-t border-white/50 px-6 py-4 text-[12px] text-foreground/45 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-            <span>© 2026 Payrent. Built on Robinhood Chain.</span>
+            <span>© 2026 Liquid Intelligence. Built on Robinhood Chain.</span>
             <a href="mailto:hello@relay-pay.dev" className="hover:text-foreground/70">
               hello@relay-pay.dev
             </a>

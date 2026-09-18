@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { X } from 'lucide-react'
+import BrandLogo from '../brand/BrandLogo'
 import { cn } from '@/lib/utils'
 import { primaryNav } from '../../navigation/config'
 
@@ -40,13 +41,7 @@ export default function CircleMenu({ open, onClose, onWallet, isConnected }) {
         aria-label="Menu"
       >
         <div className="flex items-center justify-between">
-          <a
-            href="#"
-            className="font-serif text-[22px] tracking-[0.02em] text-foreground"
-            onClick={onClose}
-          >
-            PAYRENT
-          </a>
+          <BrandLogo onClick={onClose} />
           <button
             type="button"
             className="inline-flex size-10 items-center justify-center rounded-full bg-foreground text-background"

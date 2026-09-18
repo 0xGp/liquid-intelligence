@@ -23,7 +23,7 @@ export default function Web3Providers({ children }) {
           theme={theme}
           initialChain={robinhood}
           locale="en-US"
-          appInfo={{ appName: 'Payrent' }}
+          appInfo={{ appName: 'Liquid Intelligence' }}
         >
           {children}
         </RainbowKitProvider>
