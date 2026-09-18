@@ -1,11 +1,14 @@
 /**
- * Compile + deploy CreditLedger to Robinhood Testnet.
+ * Compile + deploy CreditLedger to Robinhood Chain.
  *
  * Usage:
  *   DEPLOYER_PRIVATE_KEY=0x... node scripts/deploy-credit-ledger.mjs
  *
+ * Network:
+ *   DEPLOY_NETWORK=mainnet|testnet  (defaults to VITE_DEPOSIT_NETWORK, then mainnet)
+ *
  * Optional:
- *   TREASURY_ADDRESS=0x...   (defaults to deployer)
+ *   TREASURY_ADDRESS=0x...   (defaults to VITE_VINCE_TREASURY, then deployer)
  *
  * Writes address to stdout and artifacts/credit-ledger-deployment.json
  */
@@ -13,49 +16,16 @@ import { createWalletClient, createPublicClient, http, getAddress, isAddress } f
 import { privateKeyToAccount } from 'viem/accounts'
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const root = join(__dirname, '..')
-
-const robinhoodTestnet = {
-  id: 46630,
-  name: 'Robinhood Testnet',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://rpc.testnet.chain.robinhood.com'] },
-  },
-}
-
-function loadEnvFile() {
-  const envPath = join(root, '.env')
-  if (!existsSync(envPath)) return
-  const text = readFileSync(envPath, 'utf8')
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const eq = trimmed.indexOf('=')
-    if (eq < 0) continue
-    const key = trimmed.slice(0, eq).trim()
-    let val = trimmed.slice(eq + 1).trim()
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
-      val = val.slice(1, -1)
-    }
-    if (process.env[key] == null || process.env[key] === '') {
-      process.env[key] = val
-    }
-  }
-}
+import { join } from 'node:path'
+import { loadEnvFile, resolveNetwork, root } from './robinhood-networks.mjs'
 
 loadEnvFile()
 
-const pk = (process.env.DEPLOYER_PRIVATE_KEY || process.env.VAULT_PRIVATE_KEY || '').trim()
+const chain = resolveNetwork()
+
+const pk = (process.env.DEPLOYER_PRIVATE_KEY || '').trim()
 if (!pk || !pk.startsWith('0x')) {
-  console.error('Set DEPLOYER_PRIVATE_KEY (or VAULT_PRIVATE_KEY) in .env')
+  console.error('Set DEPLOYER_PRIVATE_KEY in .env (ETH key, not VAULT_PRIVATE_KEY)')
   process.exit(1)
 }
 
@@ -91,20 +61,21 @@ if (!existsSync(resolvedBin) || !existsSync(resolvedAbi)) {
 const bytecode = `0x${readFileSync(resolvedBin, 'utf8').trim()}`
 const abi = JSON.parse(readFileSync(resolvedAbi, 'utf8'))
 
-const transport = http(robinhoodTestnet.rpcUrls.default.http[0])
-const publicClient = createPublicClient({ chain: robinhoodTestnet, transport })
+const transport = http(chain.rpcUrls.default.http[0])
+const publicClient = createPublicClient({ chain, transport })
 const walletClient = createWalletClient({
   account,
-  chain: robinhoodTestnet,
+  chain,
   transport,
 })
 
 const balance = await publicClient.getBalance({ address: account.address })
+console.log(`Network:  ${chain.name} (${chain.id})`)
 console.log(`Deployer: ${account.address}`)
 console.log(`Treasury: ${treasury}`)
 console.log(`Balance:  ${balance} wei`)
 if (balance === 0n) {
-  console.error('Deployer has 0 testnet ETH. Fund it on Robinhood Testnet first.')
+  console.error(`Deployer has 0 ETH on ${chain.name}. Fund ${account.address} first.`)
   process.exit(1)
 }
 
@@ -124,8 +95,8 @@ if (receipt.status !== 'success' || !receipt.contractAddress) {
 
 const address = getAddress(receipt.contractAddress)
 const out = {
-  network: 'robinhood-testnet',
-  chainId: robinhoodTestnet.id,
+  network: chain.slug,
+  chainId: chain.id,
   address,
   treasury,
   deployer: account.address,
@@ -133,16 +104,13 @@ const out = {
   deployedAt: new Date().toISOString(),
 }
 
-writeFileSync(
-  join(artifactsDir, 'credit-ledger-deployment.json'),
-  JSON.stringify(out, null, 2)
-)
+writeFileSync(join(artifactsDir, 'credit-ledger-deployment.json'), JSON.stringify(out, null, 2))
 
 console.log('\nDeployed CreditLedger')
 console.log(`Address: ${address}`)
 console.log('\nAdd to .env:')
 console.log(`VITE_CREDIT_LEDGER_ADDRESS=${address}`)
-console.log(`VITE_DEPOSIT_NETWORK=testnet`)
+console.log(`VITE_DEPOSIT_NETWORK=${chain.envNetwork}`)
 if (!treasuryRaw) {
   console.log(`VITE_VINCE_TREASURY=${treasury}`)
 }

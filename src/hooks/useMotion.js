@@ -10,10 +10,14 @@ export function useMotion() {
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const isTouch = window.matchMedia('(max-width: 860px)').matches
+    const hash = window.location.hash || '#'
+    const landingHash = hash === '#' || hash === '' || hash === '#work' || hash === '#about'
+    const onLanding = () =>
+      landingHash || document.documentElement.classList.contains('is-landing-scroll')
 
     let lenis = null
     let tickerFn = null
-    if (!reduceMotion && !isTouch) {
+    if (!reduceMotion && !isTouch && !onLanding()) {
       lenis = new Lenis({
         duration: 1.15,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),

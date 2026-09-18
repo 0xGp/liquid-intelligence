@@ -24,6 +24,9 @@ export default function Footer() {
         <a href="#api-market" data-hover>
           API key market
         </a>
+        <a href="#payments" data-hover>
+          Payments
+        </a>
         <a href="#list-key" data-hover>
           List a key
         </a>

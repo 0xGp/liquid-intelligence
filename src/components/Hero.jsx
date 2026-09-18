@@ -1,24 +1,17 @@
 import React, { useRef, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { useLiquid } from '../hooks/useLiquid'
 import { useMarketplace } from '../context/MarketplaceContext'
 import { shortId } from '../web3/agents'
 
 export default function Hero() {
-  const heroRef = useRef(null)
-  const canvasRef = useRef(null)
-  useLiquid(heroRef, canvasRef)
-
   const { isConnected, address } = useAccount()
   const { openConnectModal } = useConnectModal()
-  const { balance, setDepositModalOpen } = useMarketplace()
+  const { balance, openDepositFrom } = useMarketplace()
 
-  // When wallet connects, auto-navigate to marketplace
   const prevConnected = useRef(isConnected)
   useEffect(() => {
     if (!prevConnected.current && isConnected) {
-      // Wallet just connected — route to marketplace
       setTimeout(() => {
         window.location.hash = '#marketplace'
       }, 400)
@@ -30,67 +23,46 @@ export default function Hero() {
     window.location.hash = '#marketplace'
   }
 
-  const handleConnect = () => {
-    openConnectModal?.()
-  }
-
   return (
-    <section className="hero" ref={heroRef}>
-      <canvas id="liquidCanvas" ref={canvasRef} aria-hidden="true" />
+    <section className="hero" id="hero">
       <div className="hero-inner">
         {!isConnected ? (
           <>
-            <div className="hero-kicker">Video models · Settled on Robinhood Chain</div>
+            <p className="hero-kicker">Payrent</p>
             <h1 className="hero-headline">
-              <span className="line">Agents rent models.</span>
-              <span className="line">Per second. Real time.</span>
+              AI infrastructure marketplace
             </h1>
             <p className="hero-subhead-spec">
-              Connect your wallet, deposit Robinhood ETH, and use every major video model from one credit balance.
+              Generate AI. Rent API access. Pay only for what you use — settled in ETH on
+              Robinhood Chain.
             </p>
-            <div className="hero-cta-group">
-              <button type="button" className="hero-connect-btn" onClick={handleConnect} data-hover>
-                Connect wallet
+            <div className="hero-cta-row">
+              <button type="button" className="hero-cta-primary" onClick={goToMarketplace}>
+                Explore Marketplace
               </button>
-              <button type="button" className="hero-explore-btn" onClick={goToMarketplace} data-hover>
-                Browse models
+              <button type="button" className="hero-cta-secondary" onClick={() => openConnectModal?.()}>
+                Connect Robinhood
               </button>
-            </div>
-            <div className="hero-foot">
-              <span>Veo · Kling · Hailuo · Runway · Open-Sora</span>
-              <span className="scroll-cue" onClick={goToMarketplace}>
-                Marketplace
-              </span>
             </div>
           </>
         ) : (
           <>
-            <div className="hero-kicker">Wallet {shortId(address)} · {balance.toFixed(2)} credits</div>
-            <h1 className="hero-headline">
-              <span className="line">Your marketplace</span>
-              <span className="line">is live.</span>
-            </h1>
+            <p className="hero-kicker">Wallet {shortId(address)}</p>
+            <h1 className="hero-headline">{balance.toFixed(2)} credits</h1>
             <p className="hero-subhead-spec">
-              Pick a model, set the shot, and settle per second of output. Nothing invoiced.
+              Deposit ETH on Robinhood mainnet, then open the marketplace to generate or chat.
             </p>
-            <div className="hero-cta-group">
-              <button type="button" className="hero-connect-btn" onClick={goToMarketplace} data-hover>
-                Open marketplace
+            <div className="hero-cta-row">
+              <button type="button" className="hero-cta-primary" onClick={goToMarketplace}>
+                Open Marketplace
               </button>
               <button
                 type="button"
-                className="hero-explore-btn"
-                onClick={() => setDepositModalOpen(true)}
-                data-hover
+                className="hero-cta-secondary"
+                onClick={(e) => openDepositFrom(e.currentTarget)}
               >
                 Deposit ETH
               </button>
-            </div>
-            <div className="hero-foot">
-              <span>Billed per second · settled in Robinhood ETH</span>
-              <span className="scroll-cue" onClick={goToMarketplace}>
-                Choose model
-              </span>
             </div>
           </>
         )}

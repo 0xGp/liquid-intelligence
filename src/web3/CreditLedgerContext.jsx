@@ -18,6 +18,7 @@ import { wagmiConfig } from './config'
 import {
   DEPOSIT_CHAIN,
   MIN_DEPOSIT_ETH,
+  CREDITS_PER_ETH,
   ethToCredits,
   parseDepositEth,
 } from './tokens'
@@ -29,6 +30,7 @@ import {
   isCreditLedgerConfigured,
 } from './creditLedger'
 import { isUserRejection } from './agents'
+import { recordPayment } from './paymentLedger'
 
 const CreditLedgerContext = createContext(null)
 
@@ -112,6 +114,16 @@ export function CreditLedgerProvider({ children }) {
           chainId: DEPOSIT_CHAIN.id,
         })
         const next = await refreshBalance()
+        recordPayment({
+          id: `pay_dep_${hash}`,
+          wallet: address,
+          kind: 'ledger_deposit',
+          eth: num,
+          credits: ethToCredits(num),
+          txHash: hash,
+          createdAt: Date.now(),
+          title: 'Studio credit ledger',
+        })
         return {
           hash,
           credits: ethToCredits(num),
@@ -197,6 +209,16 @@ export function CreditLedgerProvider({ children }) {
           chainId: DEPOSIT_CHAIN.id,
         })
         const next = await refreshBalance()
+        recordPayment({
+          id: `pay_sp_${hash}`,
+          wallet: address,
+          kind: 'ledger_spend',
+          eth: cost / CREDITS_PER_ETH,
+          credits: cost,
+          txHash: hash,
+          createdAt: Date.now(),
+          title: 'Studio model spend',
+        })
         return { hash, credits: cost, balance: next }
       } catch (err) {
         if (isUserRejection(err)) {

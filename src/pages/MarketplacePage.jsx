@@ -1,15 +1,24 @@
 import React, { useEffect } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { ArrowLeft, MessageSquare, Plus, Video, Wallet, X } from 'lucide-react'
 import MarketplaceGrid from '../components/MarketplaceGrid'
 import ConfigPanel from '../components/ConfigPanel'
 import TextChatPanel from '../components/TextChatPanel'
 import VideoResultModal from '../components/VideoResultModal'
 import MarketplaceFooter from '../components/MarketplaceFooter'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { useMarketplace } from '../context/MarketplaceContext'
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import { shortId } from '../web3/agents'
 import { DEPOSIT_CHAIN } from '../web3/tokens'
+
+const TABS = [
+  { id: 'video', label: 'Video', icon: Video },
+  { id: 'text', label: 'Text LLMs', icon: MessageSquare },
+]
 
 export default function MarketplacePage() {
   const { isConnected, address } = useAccount()
@@ -17,11 +26,10 @@ export default function MarketplacePage() {
   const { openConnectModal } = useConnectModal()
   const {
     balance,
-    setDepositModalOpen,
-    promptDrawerOpen,
-    setPromptDrawerOpen,
+    openDepositFrom,
     marketplaceTab,
     setMarketplaceTab,
+    openStudioFrom,
   } = useMarketplace()
   const { activeRental, clearStudio, rentalForListing } = useApiKeyMarket()
 
@@ -36,25 +44,24 @@ export default function MarketplacePage() {
       const studio = e.detail?.studio
       if (studio === 'chat') {
         setMarketplaceTab('text')
-        setPromptDrawerOpen(true)
+        openStudioFrom()
       } else if (studio === 'video') {
         setMarketplaceTab('video')
-        setPromptDrawerOpen(true)
+        openStudioFrom()
       }
     }
     window.addEventListener('vince:open-studio', onStudio)
     return () => window.removeEventListener('vince:open-studio', onStudio)
-  }, [setMarketplaceTab, setPromptDrawerOpen])
+  }, [setMarketplaceTab, openStudioFrom])
 
-  // If we land with an active rental already, open the matching studio
   useEffect(() => {
     if (!activeRental) return
     if (activeRental.studio === 'chat') {
       setMarketplaceTab('text')
-      setPromptDrawerOpen(true)
+      openStudioFrom()
     } else if (activeRental.studio === 'video') {
       setMarketplaceTab('video')
-      setPromptDrawerOpen(true)
+      openStudioFrom()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -64,102 +71,147 @@ export default function MarketplacePage() {
   }
 
   const onDepositChain = chainId === DEPOSIT_CHAIN.id
-  const openDeposit = () => {
+  const openDeposit = (el) => {
     if (!isConnected) {
       openConnectModal?.()
       return
     }
-    setDepositModalOpen(true)
+    openDepositFrom(el)
   }
 
   const isText = marketplaceTab === 'text'
-  const rentalBalance = activeRental
-    ? rentalForListing(activeRental.listingId)
-    : null
+  const rentalBalance = activeRental ? rentalForListing(activeRental.listingId) : null
 
   return (
-    <div className={`mp-page${promptDrawerOpen ? ' has-drawer' : ''}`}>
-      <button type="button" className="mp-back" onClick={goBack} aria-label="Back">
-        ←
-      </button>
+    <div className="min-h-screen bg-[#F0F1F4]">
+      <div className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-8 sm:px-8 lg:px-14 xl:px-20">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="mb-10 size-10 rounded-full bg-card"
+          onClick={goBack}
+          aria-label="Back to home"
+        >
+          <ArrowLeft size={18} strokeWidth={1.75} aria-hidden />
+        </Button>
 
-      {activeRental && (
-        <div className="mp-rental-banner">
-          <div>
-            <strong>Rented key active</strong>
-            <span>
-              {activeRental.title} · {activeRental.keyMasked} · {activeRental.provider} ·{' '}
-              {activeRental.studio === 'chat' ? 'chat' : 'video'}
-              {rentalBalance
-                ? ` · ${rentalBalance.creditsRemaining.toFixed(2)} rental credits left`
-                : ''}
-            </span>
-          </div>
-          <button type="button" className="mp-bar-deposit" onClick={clearStudio}>
-            Clear rented key
-          </button>
-        </div>
-      )}
-
-      <header className="mp-bar">
-        <div className="mp-bar-title">
-          <h1>Marketplace</h1>
-          <p>
-            {activeRental
-              ? `Using vault-proxied ${activeRental.provider} key — billed from rental credits`
-              : isText
-                ? 'Rent text LLMs · chat billed per message on Robinhood Testnet'
-                : 'Rent video models · settle from 0.001 ETH on Robinhood Testnet'}
-          </p>
-          <div className="mp-category-tabs" role="tablist" aria-label="Marketplace category">
-            <button
+        {activeRental && (
+          <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold text-foreground">Rented key active</p>
+              <p className="mt-1 truncate text-[13px] text-muted-foreground">
+                {activeRental.title} · {activeRental.keyMasked} · {activeRental.provider} ·{' '}
+                {activeRental.studio === 'chat' ? 'chat' : 'video'}
+                {rentalBalance
+                  ? ` · ${rentalBalance.creditsRemaining.toFixed(2)} rental credits left`
+                  : ''}
+              </p>
+            </div>
+            <Button
               type="button"
-              role="tab"
-              aria-selected={!isText}
-              className={`mp-category-tab ${!isText ? 'is-active' : ''}`}
-              onClick={() => setMarketplaceTab('video')}
+              variant="outline"
+              className="shrink-0 rounded-full bg-background px-5"
+              onClick={clearStudio}
             >
-              Video
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isText}
-              className={`mp-category-tab ${isText ? 'is-active' : ''}`}
-              onClick={() => setMarketplaceTab('text')}
-            >
-              Text LLMs
-            </button>
+              <X size={15} strokeWidth={2} aria-hidden />
+              Clear rented key
+            </Button>
           </div>
-        </div>
+        )}
 
-        <div className="mp-bar-session">
-          {isConnected ? (
-            <>
-              <div className="mp-bar-pills">
-                <span className="mp-pill" title={address}>
-                  {shortId(address)}
-                </span>
-                <span className={`mp-pill ${onDepositChain ? 'is-ok' : 'is-warn'}`}>
-                  {onDepositChain ? 'Robinhood Testnet' : 'Switch to testnet'}
-                </span>
-                <span className="mp-pill is-balance">
-                  {balance.toFixed(2)} credits
-                </span>
-              </div>
-              <button type="button" className="mp-bar-deposit" onClick={openDeposit}>
-                Deposit ETH
-              </button>
-            </>
-          ) : (
-            <button type="button" className="mp-bar-deposit" onClick={openConnectModal}>
-              Connect Robinhood
-            </button>
-          )}
-        </div>
-      </header>
+        <header className="flex flex-col items-start gap-8">
+          <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0 max-w-[40rem]">
+              <Badge variant="outline" className="border-border bg-card px-3.5 py-1.5 text-[12px]">
+                Studio
+              </Badge>
+              <h1 className="mt-6 text-[clamp(2rem,5vw,3.25rem)] leading-[1.08] text-foreground">
+                Marketplace
+              </h1>
+              <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">
+                {activeRental
+                  ? `Using vault-proxied ${activeRental.provider} key — billed from rental credits.`
+                  : 'Create with AI models. Every call is metered in credits and settled on Robinhood Chain.'}
+              </p>
+            </div>
 
-      <div className="mp-flow">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {isConnected ? (
+                <>
+                  <span
+                    className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-[12px] font-medium text-muted-foreground"
+                    title={address}
+                  >
+                    {shortId(address)}
+                  </span>
+                  <span
+                    className={cn(
+                      'inline-flex h-10 items-center rounded-full border px-4 text-[12px] font-medium',
+                      onDepositChain
+                        ? 'border-border bg-card text-muted-foreground'
+                        : 'border-amber-300 bg-amber-50 text-amber-700',
+                    )}
+                  >
+                    {onDepositChain ? 'Robinhood Chain' : 'Switch to Robinhood'}
+                  </span>
+                  <span className="inline-flex h-10 items-center rounded-full bg-foreground px-4 text-[12px] font-semibold text-background">
+                    {balance.toFixed(2)} credits
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 min-h-10 rounded-full bg-card px-5"
+                    onClick={(e) => openDeposit(e.currentTarget)}
+                  >
+                    <Plus size={15} strokeWidth={2} aria-hidden />
+                    Deposit ETH
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-full border-border bg-card px-6"
+                  onClick={openConnectModal}
+                >
+                  <Wallet size={15} strokeWidth={2} aria-hidden />
+                  Connect Robinhood
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="inline-flex w-full gap-1 self-start rounded-full border border-border bg-card p-1 sm:w-auto"
+            role="tablist"
+            aria-label="Marketplace category"
+          >
+            {TABS.map((tab) => {
+              const Icon = tab.icon
+              const active = marketplaceTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={cn(
+                    'inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-medium transition-colors duration-200 sm:flex-none',
+                    active
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                  )}
+                  onClick={() => setMarketplaceTab(tab.id)}
+                >
+                  <Icon size={16} strokeWidth={1.75} aria-hidden />
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+        </header>
+
         <MarketplaceGrid />
         <MarketplaceFooter />
       </div>

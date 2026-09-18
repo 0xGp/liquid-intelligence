@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Cursor from './components/Cursor'
-import Nav from './components/Nav'
-import TopWalletBar from './components/TopWalletBar'
+import AppNav from './components/navigation/AppNav'
 import DepositModal from './components/DepositModal'
 
 import LandingPage from './pages/LandingPage'
@@ -9,6 +8,7 @@ import MarketplacePage from './pages/MarketplacePage'
 import ApiMarketPage from './pages/ApiMarketPage'
 import ListKeyPage from './pages/ListKeyPage'
 import EarningsPage from './pages/EarningsPage'
+import PaymentsPage from './pages/PaymentsPage'
 
 import { MarketplaceProvider } from './context/MarketplaceContext'
 import { ApiKeyMarketProvider } from './web3/ApiKeyMarketContext'
@@ -48,6 +48,7 @@ function AppInner() {
   const onApiMarket = hash === '#api-market'
   const onListKey = hash === '#list-key'
   const onEarnings = hash === '#earnings'
+  
 
   let page = <LandingPage />
   if (onRail) page = <Rail />
@@ -55,6 +56,7 @@ function AppInner() {
   else if (onApiMarket) page = <ApiMarketPage />
   else if (onListKey) page = <ListKeyPage />
   else if (onEarnings) page = <EarningsPage />
+ 
 
   return (
     <>
@@ -62,8 +64,7 @@ function AppInner() {
         Skip to content
       </a>
       <Cursor />
-      <Nav />
-      <TopWalletBar />
+      <AppNav />
       <DepositModal />
       {page}
     </>

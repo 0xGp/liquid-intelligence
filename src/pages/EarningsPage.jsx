@@ -62,6 +62,9 @@ export default function EarningsPage() {
           </p>
         </div>
         <div className="ak-bar-actions">
+          <a className="ak-ghost-btn" href="#payments">
+            Payments
+          </a>
           <a className="ak-ghost-btn" href="#list-key">
             List a key
           </a>
@@ -83,16 +86,23 @@ export default function EarningsPage() {
           <>
             <div className="ak-earn-hero">
               <div>
-                <p className="ak-earn-label">Claimable now</p>
+                <p className="ak-earn-label">Total earnings</p>
+                <p className="ak-earn-value">
+                  {formatEthShort(
+                    myClaimable.rows.reduce((s, r) => s + (r.listerEth || 0), 0)
+                  )}{' '}
+                  ETH
+                </p>
+              </div>
+              <div>
+                <p className="ak-earn-label">Claimable</p>
                 <p className="ak-earn-value">{formatEthShort(myClaimable.total)} ETH</p>
               </div>
               <div>
-                <p className="ak-earn-label">Wallet</p>
-                <p className="ak-earn-sub">{shortId(address)}</p>
-              </div>
-              <div>
-                <p className="ak-earn-label">Active listings</p>
-                <p className="ak-earn-sub">{myListings.length}</p>
+                <p className="ak-earn-label">Usage</p>
+                <p className="ak-earn-value">
+                  {myClaimable.rows.reduce((s, r) => s + (r.calls || 0), 0).toLocaleString()} calls
+                </p>
               </div>
             </div>
 

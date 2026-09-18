@@ -1,16 +1,15 @@
 import { getAddress, isAddress, parseEther } from 'viem'
-import { robinhood, robinhoodTestnet } from './chain'
+import { robinhood } from './chain'
 
-/** Deposit settlement network — testnet until mainnet launch. */
-export const DEPOSIT_CHAIN =
-  import.meta.env.VITE_DEPOSIT_NETWORK === 'mainnet' ? robinhood : robinhoodTestnet
+/** Deposit settlement network — Robinhood mainnet only. */
+export const DEPOSIT_CHAIN = robinhood
 
-/** Minimum native ETH deposit on Robinhood (testnet-friendly). */
+/** Minimum native ETH deposit. */
 export const MIN_DEPOSIT_ETH = 0.001
 
 /**
  * Credits minted per 1 ETH deposited.
- * 0.001 ETH → 5 credits (same floor as the old 5 USDC min).
+ * 0.001 ETH → 5 credits.
  */
 export const CREDITS_PER_ETH = 5000
 

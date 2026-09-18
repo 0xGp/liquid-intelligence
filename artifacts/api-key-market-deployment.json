@@ -1,11 +1,11 @@
 {
-  "network": "robinhood-testnet",
-  "chainId": 46630,
-  "address": "0xe108bBF7Da6b2E6df81a3e4654F163590ea5121E",
-  "treasury": "0x10Ede187d03D651fc68f62a2d6501F67A6e93a86",
-  "operator": "0x23982B3d1483ACdAd73d48192f3bb4Ae736d1f34",
+  "network": "robinhood-mainnet",
+  "chainId": 4663,
+  "address": "0xa97345F24818638D5EFe798925f260505541a9B0",
+  "treasury": "0x9D2D3B1d1062a33B39E7b8E5ef38BdD63e995153",
+  "operator": "0x9D2D3B1d1062a33B39E7b8E5ef38BdD63e995153",
   "platformFeeBps": 1000,
-  "deployer": "0x10Ede187d03D651fc68f62a2d6501F67A6e93a86",
-  "txHash": "0x9b6b2b74227026c2de174c590f84ddea62af176a447b4d5e783cc7af7d4382d2",
-  "deployedAt": "2026-09-18T13:38:23.150Z"
+  "deployer": "0x9D2D3B1d1062a33B39E7b8E5ef38BdD63e995153",
+  "txHash": "0x24025093b87c17cce10dd647606ecc2f31cf2e4163aabcbf38eabae1dc488962",
+  "deployedAt": "2026-09-18T19:02:17.172Z"
 }

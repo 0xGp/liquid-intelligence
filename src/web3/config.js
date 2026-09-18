@@ -6,7 +6,7 @@ import {
   rainbowWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets'
-import { robinhood, robinhoodTestnet } from './chain'
+import { robinhood } from './chain'
 import { robinhoodWallet } from './wallets'
 
 export const walletConnectProjectId =
@@ -14,16 +14,16 @@ export const walletConnectProjectId =
 
 const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
+/** Robinhood mainnet only — no testnet in the wallet connector. */
 export const wagmiConfig = getDefaultConfig({
-  appName: 'Vince',
-  appDescription: 'A payment rail for AI agents on Robinhood Chain.',
-  appUrl: appUrl || 'https://vince.app',
+  appName: 'Payrent',
+  appDescription: 'AI infrastructure marketplace on Robinhood Chain.',
+  appUrl: appUrl || 'https://payrent.app',
   appIcon: `${appUrl}/assets/logo-square.png`,
   projectId: walletConnectProjectId,
-  chains: [robinhood, robinhoodTestnet],
+  chains: [robinhood],
   transports: {
     [robinhood.id]: http(robinhood.rpcUrls.default.http[0]),
-    [robinhoodTestnet.id]: http(robinhoodTestnet.rpcUrls.default.http[0]),
   },
   wallets: [
     {

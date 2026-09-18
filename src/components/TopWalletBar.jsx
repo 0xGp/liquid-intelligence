@@ -10,7 +10,7 @@ export default function TopWalletBar() {
   const {
     balance,
     isDepositPending,
-    setDepositModalOpen,
+    openDepositFrom,
     ledgerConfigured,
   } = useMarketplace()
 
@@ -44,10 +44,13 @@ export default function TopWalletBar() {
         </div>
 
         <div className="top-wallet-actions">
+          <a href="#payments" className="top-bar-btn">
+            Payments
+          </a>
           <button
             type="button"
             className="top-bar-btn deposit-btn"
-            onClick={() => setDepositModalOpen(true)}
+            onClick={(e) => openDepositFrom(e.currentTarget)}
           >
             Deposit
           </button>
@@ -61,19 +64,20 @@ export default function TopWalletBar() {
         <div className="zero-balance-banner">
           <div className="zero-balance-content">
             <span>
-              Credit ledger not configured. Deploy on testnet and set VITE_CREDIT_LEDGER_ADDRESS.
+              Credit ledger not configured. Deposit is optional for studio generation; set
+              VITE_CREDIT_LEDGER_ADDRESS to track payments.
             </span>
           </div>
         </div>
       ) : isZero ? (
         <div className="zero-balance-banner">
           <div className="zero-balance-content">
-            <span>No on-chain credits. Deposit ETH to the ledger before using models.</span>
+            <span>No on-chain credits yet. Studio generation does not require a deposit.</span>
           </div>
           <button
             type="button"
             className="zero-deposit-btn"
-            onClick={() => setDepositModalOpen(true)}
+            onClick={(e) => openDepositFrom(e.currentTarget)}
           >
             Deposit ETH
           </button>

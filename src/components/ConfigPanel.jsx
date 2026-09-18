@@ -1,7 +1,10 @@
 import React, { useState, useId, useRef, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { AlertTriangle, Code2, Loader2, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useMarketplace } from '../context/MarketplaceContext'
+import StudioSheet from './marketplace/StudioSheet'
 import CodeModal from './CodeModal'
 import { veoPrompts } from '../data/veoCodeSnippets'
 import {
@@ -25,13 +28,18 @@ import {
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import { vaultProxy } from '../web3/vaultProxy'
 
+const studioChip =
+  'inline-flex h-8 max-w-full items-center truncate rounded-full border border-border bg-background px-3 text-[12px] font-medium text-foreground hover:bg-secondary'
+const studioChipOn =
+  'border-foreground bg-foreground text-background hover:bg-foreground hover:text-background'
+
 export default function ConfigPanel() {
   const {
     selectedModel,
     selectedModelId,
     setSelectedModelId,
     balance,
-    setDepositModalOpen,
+    openDepositFrom,
     jobState,
     setJobState,
     jobProgress,
@@ -46,6 +54,7 @@ export default function ConfigPanel() {
     setLastDeduction,
     promptDrawerOpen,
     setPromptDrawerOpen,
+    studioOrigin,
     setVideoModalOpen,
     ledgerConfigured,
     chargeCredits,
@@ -1084,7 +1093,7 @@ export default function ConfigPanel() {
           `Need ${estimatedCost.toFixed(2)} rental credits (you have ${rentalBalance.toFixed(2)}). Deposit more ETH on the API market.`
         )
       } else {
-        setDepositModalOpen(true)
+        openDepositFrom()
       }
       return
     }
@@ -1181,396 +1190,172 @@ export default function ConfigPanel() {
     }
   }, [jobState, jobResult, setVideoModalOpen])
 
-  // Lock body scroll while drawer is open
-  useEffect(() => {
-    if (!promptDrawerOpen) return undefined
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [promptDrawerOpen])
-
   const closeDrawer = () => {
     setPromptDrawerOpen(false)
   }
 
-  if (!promptDrawerOpen) return null
-
   return (
-    <div className="prompt-drawer-root" id="config-panel">
-      <button
-        type="button"
-        className="prompt-drawer-backdrop"
-        aria-label="Close prompt panel"
-        onClick={closeDrawer}
-      />
-      <aside
-        className="prompt-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Prompt ${selectedModel.display_name}`}
-      >
+    <StudioSheet
+      open={promptDrawerOpen}
+      onClose={closeDrawer}
+      origin={studioOrigin}
+      label={`Prompt ${selectedModel.display_name}`}
+    >
       <CodeModal
         isOpen={showCodeModal}
         onClose={() => setShowCodeModal(false)}
         modelId={selectedModel.id}
       />
 
-      <header className="prompt-drawer-head">
-        <div className="prompt-drawer-head-text">
-          <p className="config-badge-model">{selectedModel.provider}</p>
-          <h2 className="config-title">{selectedModel.display_name}</h2>
-          <p className="config-subtitle">{selectedModel.tagline}</p>
-        </div>
-        <div className="prompt-drawer-head-actions">
-          <button
-            type="button"
-            className="view-sdk-code-btn"
-            onClick={() => setShowCodeModal(true)}
-          >
-            Code
-          </button>
-          <span className="config-rate-pill">
-            <strong>${selectedModel.price_per_second_credits.toFixed(2)}/sec</strong>
-          </span>
-          <button
-            type="button"
-            className="prompt-drawer-close"
-            onClick={closeDrawer}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+      <header className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="truncate font-serif text-[1.375rem] leading-tight text-foreground">
+              {selectedModel.display_name}
+            </h2>
+            <p className="mt-1 truncate text-[13px] text-muted-foreground">
+              {selectedModel.provider} · {selectedModel.tagline}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+              onClick={() => setShowCodeModal(true)}
+              aria-label="View code"
+            >
+              <Code2 size={15} strokeWidth={1.75} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+              onClick={closeDrawer}
+              aria-label="Close"
+            >
+              <X size={16} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="prompt-chat-scroll">
-        <div className="prompt-chat-bubble is-system">
-          Describe the shot. Adjust settings below, then send to generate with{' '}
-          <strong>{selectedModel.display_name}</strong>.
-        </div>
-
-        {prompt.trim() && jobState !== 'idle' && (
-          <div className="prompt-chat-bubble is-user">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-6">
+        {prompt.trim() && jobState === 'in_progress' && (
+          <p className="rounded-2xl bg-foreground px-4 py-3 text-[13px] leading-relaxed text-background">
             {prompt}
-          </div>
+          </p>
         )}
 
-      <div className="config-panel-card is-chat-panel">
-
-        {/* ── GOOGLE VEO 3.1 OFFICIAL NOTICE ── */}
-        {isVeo && (
-          <div className="model-integration-banner veo-banner">
-            <div className="banner-left">
-              <span className="banner-icon">ℹ️</span>
-              <div className="banner-text">
-                <strong>Official Gemini Note:</strong> This feature is currently only available with the <code>generateContent</code> API. Powered by <code>veo-3.1-generate-preview</code> with native audio &amp; up to 4K.
-              </div>
-            </div>
-            <button
-              type="button"
-              className="banner-action-btn"
-              onClick={() => setShowCodeModal(true)}
-            >
-              View JavaScript / Python SDK →
-            </button>
-          </div>
-        )}
-
-        {/* ── KLING 3.0 PRO INTEGRATION BANNER ── */}
-        {isKling && (
-          <div className="model-integration-banner kling-banner">
-            <div className="banner-left">
-              <span className="banner-icon">⚡</span>
-              <div className="banner-text">
-                <strong>Kling 3.0 Pro API:</strong> Calling{' '}
-                <code>https://kling3api.com/api/generate</code>
-                {klingKey ? (
-                  <span className="kling-active-key-pill" title="Key from VITE_KLING_API_KEY">
-                    Key: {klingKey.substring(0, 10)}…{klingKey.slice(-4)}
-                  </span>
-                ) : (
-                  <span className="kling-active-key-pill">Set VITE_KLING_API_KEY</span>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="banner-action-btn"
-              onClick={() => setShowCodeModal(true)}
-            >
-              View Fetch Code →
-            </button>
-          </div>
-        )}
-
-        {/* ── OPENAI SORA BANNER ── */}
-        {isSora && (
-          <div className="model-integration-banner kling-banner">
-            <div className="banner-left">
-              <span className="banner-icon">◎</span>
-              <div className="banner-text">
-                <strong>OpenAI Sora:</strong> Videos API · <code>{soraApiModel}</code>
-                {openaiKey ? (
-                  <span className="kling-active-key-pill" title="OpenAI API key from env/UI">
-                    Key: {openaiKey.substring(0, 7)}…{openaiKey.slice(-4)}
-                  </span>
-                ) : (
-                  <span className="kling-active-key-pill">Set VITE_OPENAI_API_KEY</span>
-                )}
-                {lastSoraVideoId && (
-                  <span className="kling-active-key-pill" title={lastSoraVideoId}>
-                    video: {lastSoraVideoId.slice(0, 14)}…
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="banner-actions-group">
-              <button
-                type="button"
-                className="banner-key-toggle-btn"
-                onClick={() => setShowOpenaiKey((v) => !v)}
-              >
-                {showOpenaiKey ? 'Hide Key' : 'Edit OpenAI Key'}
-              </button>
-              <button
-                type="button"
-                className="banner-action-btn"
-                onClick={() => setShowCodeModal(true)}
-              >
-                View Videos SDK →
-              </button>
-            </div>
-
-            {showOpenaiKey && (
-              <div className="kling-key-edit-box">
-                <label className="key-edit-label">
-                  OpenAI API Key (VITE_OPENAI_API_KEY in .env):
-                </label>
-                <div className="key-edit-row">
-                  <input
-                    type="password"
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                    placeholder="sk-…"
-                    className="key-input-field"
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── OPPER VIDEOS BANNER ── */}
-        {isOpper && (
-          <div className="model-integration-banner veo-banner">
-            <div className="banner-left">
-              <span className="banner-icon">◇</span>
-              <div className="banner-text">
-                <strong>Opper Videos:</strong> POST /v3/videos ·{' '}
-                <code>{opperBackend}</code>
-                {opperKey ? (
-                  <span className="kling-active-key-pill" title="Opper API key">
-                    Key: {opperKey.substring(0, 8)}…{opperKey.slice(-4)}
-                  </span>
-                ) : (
-                  <span className="kling-active-key-pill">Set VITE_OPPER_API_KEY</span>
-                )}
-              </div>
-            </div>
-            <div className="banner-actions-group">
-              <button
-                type="button"
-                className="banner-key-toggle-btn"
-                onClick={() => setShowOpperKey((v) => !v)}
-              >
-                {showOpperKey ? 'Hide Key' : 'Edit Opper Key'}
-              </button>
-              <button
-                type="button"
-                className="banner-action-btn"
-                onClick={() => setShowCodeModal(true)}
-              >
-                View /v3/videos SDK →
-              </button>
-            </div>
-
-            {showOpperKey && (
-              <div className="kling-key-edit-box">
-                <label className="key-edit-label">
-                  Opper API Key (VITE_OPPER_API_KEY in .env):
-                </label>
-                <div className="key-edit-row">
-                  <input
-                    type="password"
-                    value={opperKey}
-                    onChange={(e) => setOpperKey(e.target.value)}
-                    placeholder="op-…"
-                    className="key-input-field"
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── In Progress (with Live API Call Logs) ── */}
         {jobState === 'in_progress' && (
-          <div className="job-in-progress-box">
-            <div className="job-status-spinner-row">
-              <span className="job-spinner" />
-              <div>
-                <h3 className="job-status-title">
+          <div className="rounded-2xl border border-border bg-secondary/70 px-4 py-4">
+            <div className="flex items-start gap-3">
+              <Loader2 size={18} strokeWidth={2} className="mt-0.5 shrink-0 animate-spin text-foreground" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium leading-snug text-foreground">
                   {isOpper
-                    ? `Calling Opper Videos API · ${opperBackend}...`
+                    ? `Generating via Opper · ${opperBackend}`
                     : isSora
-                    ? `Calling OpenAI Videos API · ${soraApiModel}...`
+                    ? `Generating via Sora · ${soraApiModel}`
                     : isOmni
-                    ? 'Calling Gemini Omni Flash · POST /v1beta/interactions...'
+                    ? 'Generating via Gemini Omni Flash'
                     : isKling
-                    ? 'Calling live Kling API https://kling3api.com/api/generate...'
+                    ? 'Generating via Kling 3.0 Pro'
                     : isVeo
-                    ? 'Calling Gemini API veo-3.1-generate-preview...'
-                    : 'Generating your video... this usually takes 30–90 seconds.'}
-                </h3>
-                <p className="job-queue-info">
+                    ? 'Generating via Veo 3.1'
+                    : 'Generating your video'}
+                </p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   {isOpper
-                    ? 'POST /v3/videos → poll status_url → download presigned url'
+                    ? 'Create, poll, then download the clip.'
                     : isSora
-                    ? 'Create → poll GET /v1/videos/{id} → download content (may take several minutes)'
+                    ? 'Create, poll, then download. This can take several minutes.'
                     : isOmni
-                    ? 'Interactions API · multimodal video generation'
+                    ? 'Multimodal video generation in progress.'
                     : isKling
-                      ? 'Live HTTP Request in progress · Polling status'
-                      : 'Dispatching compute job on Robinhood chain'}
+                      ? 'Live request in progress.'
+                      : 'Usually 30–90 seconds.'}
                 </p>
               </div>
             </div>
 
-            <div className="job-progress-track">
-              <div className="job-progress-bar" style={{ width: `${jobProgress}%` }} />
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full bg-foreground transition-[width] duration-300"
+                style={{ width: `${jobProgress}%` }}
+              />
             </div>
-
-            <div className="job-progress-meta">
-              <span>Model: {selectedModel.display_name}</span>
+            <div className="mt-2 flex justify-between text-[12px] tabular-nums text-muted-foreground">
+              <span>{selectedModel.display_name}</span>
               <span>{jobProgress}%</span>
             </div>
 
-            {/* Live API Console Logs */}
             {(isKling || isOmni || isSora || isOpper) && apiLogs.length > 0 && (
-              <div className="live-api-logs-console">
-                <div className="api-logs-header">
-                  <span>
-                    {isOpper
-                      ? 'Network Console (Opper /v3/videos)'
-                      : isSora
-                      ? 'Network Console (OpenAI Videos API)'
-                      : isOmni
-                        ? 'Network Console (Gemini Interactions)'
-                        : 'Network Console (Kling 3.0 API)'}
-                  </span>
-                  <span className="live-pill">Live</span>
+              <div className="mt-3 overflow-hidden rounded-xl bg-foreground px-3 py-2.5 font-mono text-[11px] leading-relaxed text-background">
+                <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wide text-background/60">
+                  <span>Live log</span>
+                  <span>Live</span>
                 </div>
-                <div className="api-logs-content">
-                  {apiLogs.map((log, i) => (
-                    <div key={i} className="log-line">
-                      <span className="log-arrow">&gt;</span> {log}
-                    </div>
-                  ))}
-                </div>
+                {apiLogs.map((log, i) => (
+                  <div key={i} className="truncate">
+                    {log}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
-        {/* ── Failed State / Real API Error Handler ── */}
         {jobState === 'failed' && (
-          <div className="job-failed-box">
-            <div className="failed-icon">⚠️</div>
-            <div className="failed-details">
-              <h4 className="failed-title">API Call Completed with Response Error</h4>
-              <p className="failed-msg">{jobError}</p>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle size={16} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium">Generation failed</p>
+                <p className="mt-1 text-[13px] leading-relaxed">{jobError}</p>
+              </div>
+            </div>
 
-              {rawApiResponse && (
-                <div className="raw-response-box">
-                  <span className="raw-response-label">
-                    Raw API Response
-                    {isOpper
-                      ? ' from Opper Videos API:'
+            {rawApiResponse && (
+              <pre className="mt-3 max-h-40 overflow-auto rounded-xl bg-white/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-amber-950">
+                {JSON.stringify(rawApiResponse, null, 2)}
+              </pre>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="inline-flex h-9 items-center rounded-full border border-amber-300 bg-white px-3.5 text-[12px] font-medium text-amber-950"
+                onClick={
+                  isKling && rawApiResponse?.code === 402
+                    ? executeKlingApi
+                    : isOpper
+                      ? executeOpperApi
                       : isSora
-                      ? ' from OpenAI Videos API:'
-                      : isOmni
-                      ? ' from Interactions API:'
-                      : isKling
-                        ? ' from kling3api.com:'
-                        : ':'}
-                  </span>
-                  <pre className="raw-response-json">{JSON.stringify(rawApiResponse, null, 2)}</pre>
-                </div>
-              )}
-
-              {isKling && rawApiResponse?.code === 402 && (
-                <div className="no-credit-solution-box">
-                  <p className="no-credit-help">
-                    <strong>402 No credit</strong> from <code>kling3api.com</code>. Update{' '}
-                    <code>VITE_KLING_API_KEY</code> in <code>.env</code> with a funded key, then restart the
-                    dev server — or preview a sample MP4 below.
-                  </p>
-                  <div className="no-credit-actions">
-                    <button type="button" className="retry-btn" onClick={executeKlingApi}>
-                      Retry
-                    </button>
-                    <button
-                      type="button"
-                      className="sample-preview-btn"
-                      onClick={handleProceedWithSampleVideo}
-                    >
-                      ▶ Play Rendered MP4 Video
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {(!isKling || rawApiResponse?.code !== 402) && (
-                <div className="failed-actions-row">
-                  <button
-                    type="button"
-                    className="retry-btn"
-                    onClick={
-                      isOpper
-                        ? executeOpperApi
-                        : isSora
-                          ? executeSoraApi
-                          : isOmni
-                            ? executeOmniApi
-                            : handleRetry
-                    }
-                  >
-                    Retry
-                  </button>
-                  <button
-                    type="button"
-                    className="sample-preview-btn"
-                    onClick={handleProceedWithSampleVideo}
-                  >
-                    ▶ View Rendered MP4 Video
-                  </button>
-                </div>
-              )}
+                        ? executeSoraApi
+                        : isOmni
+                          ? executeOmniApi
+                          : handleRetry
+                }
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center rounded-full border border-amber-300 bg-white px-3.5 text-[12px] font-medium text-amber-950"
+                onClick={handleProceedWithSampleVideo}
+              >
+                Preview sample
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── Completed: open video modal — keep chat status here ── */}
         {jobState === 'completed' && jobResult && (
-          <div className="prompt-chat-bubble is-system is-done">
-            <p>Video ready.</p>
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3">
+            <p className="text-[13px] text-foreground">Video ready.</p>
             <button
               type="button"
-              className="prompt-open-video-btn"
+              className="text-[13px] font-semibold text-foreground underline-offset-2 hover:underline"
               onClick={() => setVideoModalOpen(true)}
             >
               Open video
@@ -1578,257 +1363,303 @@ export default function ConfigPanel() {
           </div>
         )}
 
-        {/* ── Idle / active: Configuration Form (composer) ── */}
         {(jobState === 'idle' || jobState === 'completed') && (
-          <div className="config-form prompt-composer">
-            {/* Prompt presets for Veo */}
-            {isVeo && (
-              <div className="prompt-presets-row">
-                <span className="presets-label">Prompt Presets:</span>
-                <div className="presets-list">
-                  {veoPrompts.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className="preset-chip"
-                      onClick={() => applyVeoPreset(p)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Prompt presets for Omni */}
-            {isOmni && (
-              <div className="prompt-presets-row">
-                <span className="presets-label">Omni Presets:</span>
-                <div className="presets-list">
-                  {omniPrompts.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className="preset-chip"
-                      onClick={() => applyOmniPreset(p)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Prompt presets for Sora */}
-            {isSora && (
-              <div className="prompt-presets-row">
-                <span className="presets-label">Sora Presets:</span>
-                <div className="presets-list">
-                  {soraPrompts.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className="preset-chip"
-                      onClick={() => applySoraPreset(p)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Prompt presets for Opper */}
-            {isOpper && (
-              <div className="prompt-presets-row">
-                <span className="presets-label">Opper Presets:</span>
-                <div className="presets-list">
-                  {opperPrompts.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className="preset-chip"
-                      onClick={() => applyOpperPreset(p)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Prompt presets for Kling */}
-            {isKling && (
-              <div className="prompt-presets-row">
-                <span className="presets-label">Kling Presets:</span>
-                <div className="presets-list">
-                  <button
-                    type="button"
-                    className="preset-chip"
-                    onClick={() => {
-                      setPrompt('A cinematic shot of mountains at sunrise')
-                      setDuration(5)
-                                      }}
-                  >
-                    Sunrise Mountains (5s)
-                  </button>
-                  <button
-                    type="button"
-                    className="preset-chip"
-                    onClick={() => {
-                      setPrompt('A hyper-realistic character walking through Tokyo neon rain in slow motion, reflections, high consistency')
-                      setDuration(10)
-                                      }}
-                  >
-                    Tokyo Neon Motion (10s)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Prompt Input */}
-            <div className="config-field">
-              <label htmlFor={promptId} className="field-label">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor={promptId} className="text-[13px] font-medium text-foreground">
                 Prompt
-                <span className="field-sub-tag">Text → video</span>
               </label>
               <textarea
                 id={promptId}
                 rows={4}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the video you want to generate..."
-                className="config-textarea"
+                placeholder="Describe the shot, motion, lighting, and sound."
+                className="min-h-[5.5rem] w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:ring-[3px] focus-visible:ring-ring/40"
               />
             </div>
 
-            {/* Duration & Resolution */}
-            <div className="config-grid-2col">
-              <div className="config-field">
-                <div className="field-label-between">
-                  <label htmlFor={durationId} className="field-label">Duration</label>
-                  <span className="field-val-display">{activeDuration} seconds</span>
-                </div>
-                <input
-                  type="range"
-                  id={durationId}
-                  min={isSora || (isOpper && opperUsesSoraParams) ? SORA_DURATIONS[0] : 2}
-                  max={maxDuration}
-                  step={isSora || (isOpper && opperUsesSoraParams) ? 4 : 1}
-                  value={activeDuration}
-                  onChange={(e) =>
-                    setDuration(
-                      isSora || (isOpper && opperUsesSoraParams)
-                        ? snapSoraDuration(parseInt(e.target.value, 10))
-                        : parseInt(e.target.value, 10)
-                    )
-                  }
-                  className="config-range"
-                />
-                <div className="range-bounds">
-                  <span>
-                    {isSora || (isOpper && opperUsesSoraParams)
-                      ? `${SORA_DURATIONS[0]}s`
-                      : '2s'}
+            {(isVeo || isOmni || isSora || isOpper || isKling) && (
+              <div className="flex flex-wrap gap-2">
+                {isVeo &&
+                  veoPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className={studioChip}
+                      onClick={() => applyVeoPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                {isOmni &&
+                  omniPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className={studioChip}
+                      onClick={() => applyOmniPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                {isSora &&
+                  soraPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className={studioChip}
+                      onClick={() => applySoraPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                {isOpper &&
+                  opperPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className={studioChip}
+                      onClick={() => applyOpperPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                {isKling && (
+                  <>
+                    <button
+                      type="button"
+                      className={studioChip}
+                      onClick={() => {
+                        setPrompt('A cinematic shot of mountains at sunrise')
+                        setDuration(5)
+                      }}
+                    >
+                      Sunrise mountains
+                    </button>
+                    <button
+                      type="button"
+                      className={studioChip}
+                      onClick={() => {
+                        setPrompt(
+                          'A hyper-realistic character walking through Tokyo neon rain in slow motion, reflections, high consistency',
+                        )
+                        setDuration(10)
+                      }}
+                    >
+                      Tokyo neon
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <label htmlFor={durationId} className="text-[13px] font-medium text-foreground">
+                    Duration
+                  </label>
+                  <span className="text-[12px] tabular-nums text-muted-foreground">
+                    {activeDuration}s
                   </span>
-                  <span>
-                    max {maxDuration}s
-                    {isVeo && veoMode === 'extension' ? ' (extended)' : ''}
-                    {isSora || (isOpper && opperUsesSoraParams)
-                      ? ' · 4/8/12/16/20'
-                      : ''}
-                  </span>
                 </div>
+                {isSora || (isOpper && opperUsesSoraParams) ? (
+                  <div id={durationId} className="flex flex-wrap gap-2" role="group" aria-label="Duration">
+                    {SORA_DURATIONS.filter((d) => d <= maxDuration).map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        aria-pressed={activeDuration === d}
+                        className={cn(studioChip, activeDuration === d && studioChipOn)}
+                        onClick={() => setDuration(d)}
+                      >
+                        {d}s
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="range"
+                      id={durationId}
+                      min={2}
+                      max={maxDuration}
+                      step={1}
+                      value={activeDuration}
+                      onChange={(e) => setDuration(parseInt(e.target.value, 10))}
+                      className="h-8 w-full accent-foreground"
+                    />
+                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                      <span>2s</span>
+                      <span>
+                        max {maxDuration}s
+                        {isVeo && veoMode === 'extension' ? ' extended' : ''}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="config-field">
-                <label htmlFor={resolutionId} className="field-label">Resolution</label>
-                <select
-                  id={resolutionId}
-                  value={activeResolution}
-                  onChange={(e) => setResolution(e.target.value)}
-                  className="config-select"
-                >
+              <div className="flex flex-col gap-2">
+                <p id={resolutionId} className="text-[13px] font-medium text-foreground">
+                  Resolution
+                </p>
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby={resolutionId}>
                   {availableResolutions.map((res) => (
-                    <option key={res} value={res}>
-                      {res}{res === '4K' ? ' (Ultra High Fidelity · 8s length)' : ''}
-                    </option>
+                    <button
+                      key={res}
+                      type="button"
+                      aria-pressed={activeResolution === res}
+                      className={cn(studioChip, activeResolution === res && studioChipOn)}
+                      onClick={() => setResolution(res)}
+                    >
+                      {res}
+                    </button>
                   ))}
-                </select>
-                <span className="field-hint">
-                  Max: {maxRes}
-                  {activeResolution === '4K' ? ' · 1.25× tier' : ''}
-                  {isSora
-                    ? ` · API size ${soraSizeFromUi(aspectRatio, activeResolution, isSoraPro)}`
-                    : isOpper
-                      ? ` · size ${opperSizeFromUi(aspectRatio, activeResolution)}`
-                      : ''}
-                </span>
+                </div>
+                {(activeResolution === '4K' || isSora || isOpper) && (
+                  <p className="text-[12px] text-muted-foreground">
+                    {activeResolution === '4K' ? '1.25× rate · ' : ''}
+                    {isSora
+                      ? `API ${soraSizeFromUi(aspectRatio, activeResolution, isSoraPro)}`
+                      : isOpper
+                        ? `size ${opperSizeFromUi(aspectRatio, activeResolution)}`
+                        : `max ${maxRes}`}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Native Audio Setting */}
             {selectedModel.native_audio && (
-              <div className="config-field audio-toggle-field">
-                <label htmlFor={audioId} className="audio-toggle-label">
-                  <input
-                    type="checkbox"
-                    id={audioId}
-                    checked={audioEnabled}
-                    onChange={(e) => setAudioEnabled(e.target.checked)}
-                    className="config-checkbox"
-                    disabled={isVeo || isOmni || isSora || isOpper}
-                  />
-                  <span>
-                    <strong>
-                      Generate Native Audio{' '}
-                      {(isVeo || isOmni || isSora || isOpper) && (
-                        <span className="audio-always-on-badge">Always On</span>
-                      )}
-                    </strong>
-                    <small>
-                      {isOpper
-                        ? 'Audio depends on the provider model routed through Opper'
-                        : isSora
-                        ? 'Sora generates richly detailed clips with audio from your prompt'
-                        : isOmni
-                        ? 'Omni Flash generates synchronized audio with the video by default'
-                        : isVeo
-                          ? 'Veo 3.1 natively generates synchronized dialogue, sound effects & ambient sound'
-                          : `Synchronized dialogue and sound effects from ${selectedModel.display_name}`}
-                    </small>
+              <label htmlFor={audioId} className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id={audioId}
+                  checked={audioEnabled}
+                  onChange={(e) => setAudioEnabled(e.target.checked)}
+                  className="mt-0.5 size-4 accent-foreground"
+                  disabled={isVeo || isOmni || isSora || isOpper}
+                />
+                <span className="min-w-0">
+                  <span className="text-[13px] font-medium text-foreground">
+                    Native audio
+                    {(isVeo || isOmni || isSora || isOpper) && (
+                      <span className="ms-2 text-[11px] font-normal text-muted-foreground">
+                        Always on
+                      </span>
+                    )}
                   </span>
-                </label>
-              </div>
+                  <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
+                    {isOpper
+                      ? 'Depends on the provider routed through Opper.'
+                      : isSora
+                      ? 'Sora includes audio from the prompt.'
+                      : isOmni
+                      ? 'Omni Flash syncs audio with the clip.'
+                      : isVeo
+                        ? 'Veo 3.1 generates dialogue, effects, and ambience.'
+                        : `Dialogue and effects from ${selectedModel.display_name}.`}
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {(isVeo || isKling || isSora || isOpper) && (
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                {isOpper
+                  ? `Opper Videos · ${opperBackend}`
+                  : isSora
+                    ? `OpenAI Videos · ${soraApiModel}`
+                    : isKling
+                      ? klingKey
+                        ? 'Kling 3.0 Pro · live generate'
+                        : 'Kling 3.0 Pro · set VITE_KLING_API_KEY'
+                      : 'Veo 3.1 · generateContent preview'}
+                {(isSora || isOpper) && (
+                  <>
+                    {' · '}
+                    <button
+                      type="button"
+                      className="font-medium text-foreground underline-offset-2 hover:underline"
+                      onClick={() =>
+                        isSora ? setShowOpenaiKey((v) => !v) : setShowOpperKey((v) => !v)
+                      }
+                    >
+                      {isSora
+                        ? showOpenaiKey
+                          ? 'Hide key'
+                          : 'Edit OpenAI key'
+                        : showOpperKey
+                          ? 'Hide key'
+                          : 'Edit Opper key'}
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+
+            {isSora && showOpenaiKey && (
+              <label className="block text-[13px] font-medium text-foreground">
+                OpenAI API key
+                <input
+                  type="password"
+                  value={openaiKey}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  placeholder="sk-…"
+                  className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-[13px] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                  autoComplete="off"
+                />
+              </label>
+            )}
+
+            {isOpper && showOpperKey && (
+              <label className="block text-[13px] font-medium text-foreground">
+                Opper API key
+                <input
+                  type="password"
+                  value={opperKey}
+                  onChange={(e) => setOpperKey(e.target.value)}
+                  placeholder="op-…"
+                  className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-[13px] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                  autoComplete="off"
+                />
+              </label>
             )}
           </div>
         )}
-      </div>
+        </div>
       </div>
 
       {(jobState === 'idle' || jobState === 'completed') && (
-        <div className="prompt-drawer-foot">
-          <div className="estimated-cost-banner">
-            <div className="cost-calc-text">
-              Estimated cost:{' '}
-              <strong>{estimatedCost.toFixed(2)} credits</strong>
-              <span className="cost-breakdown">
-                ({activeDuration}s × ${baseRate.toFixed(2)}/sec
-                {resMultiplier > 1 ? ` × ${resMultiplier} res` : ''})
+        <div className="shrink-0 space-y-3 border-t border-border bg-card px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+            <div className="text-muted-foreground">
+              <strong className="font-semibold text-foreground">
+                {estimatedCost.toFixed(2)}
+              </strong>{' '}
+              credits
+              <span className="ms-1.5 text-[12px] text-muted-foreground/80">
+                {activeDuration}s · ${baseRate.toFixed(2)}/sec
+                {resMultiplier > 1 ? ` · ${resMultiplier}× res` : ''}
               </span>
             </div>
-            <div className="current-balance-preview">
-              Your balance: <strong>{balance.toFixed(2)} credits</strong>
+            <div className="text-[12px] text-muted-foreground">
+              Balance <strong className="font-semibold text-foreground">{balance.toFixed(2)}</strong>
             </div>
           </div>
 
           {hasInsufficientBalance && isConnected && (
-            <div className="insufficient-balance-error">
-              <span className="error-icon">⚠️</span>
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
+              <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
               <span>
                 You need {shortfall.toFixed(2)} more credits for this job.{' '}
-                <button type="button" className="inline-deposit-link" onClick={() => setDepositModalOpen(true)}>
-                  [Deposit ETH]
+                <button
+                  type="button"
+                  className="font-semibold underline underline-offset-2"
+                  onClick={(e) => openDepositFrom(e.currentTarget)}
+                >
+                  Deposit ETH
                 </button>
               </span>
             </div>
@@ -1836,7 +1667,10 @@ export default function ConfigPanel() {
 
           <button
             type="button"
-            className={`generate-cta-btn${hasInsufficientBalance && isConnected ? ' is-disabled' : ''}`}
+            className={cn(
+              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92',
+              hasInsufficientBalance && isConnected && 'bg-muted text-muted-foreground hover:opacity-100',
+            )}
             onClick={() => {
               if (jobState === 'completed') {
                 setJobState('idle')
@@ -1861,8 +1695,7 @@ export default function ConfigPanel() {
           </button>
         </div>
       )}
-      </aside>
-    </div>
+    </StudioSheet>
   )
 }
 

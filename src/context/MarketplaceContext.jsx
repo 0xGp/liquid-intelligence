@@ -33,6 +33,8 @@ export function MarketplaceProvider({ children }) {
   const [jobQueuePos, setJobQueuePos] = useState(null)
   const [lastDeduction, setLastDeduction] = useState(0)
   const [promptDrawerOpen, setPromptDrawerOpen] = useState(false)
+  const [studioOrigin, setStudioOrigin] = useState(null)
+  const [depositOrigin, setDepositOrigin] = useState(null)
   const [videoModalOpen, setVideoModalOpen] = useState(false)
 
   /** Chat threads keyed by text model id */
@@ -59,9 +61,30 @@ export function MarketplaceProvider({ children }) {
   const switchTab = (tab) => {
     setMarketplaceTab(tab)
     setPromptDrawerOpen(false)
+    setStudioOrigin(null)
     setJobState('idle')
     setJobResult(null)
     setJobError(null)
+  }
+
+  const openStudioFrom = (el) => {
+    if (el?.getBoundingClientRect) {
+      const r = el.getBoundingClientRect()
+      setStudioOrigin({ x: r.left, y: r.top, w: r.width, h: r.height })
+    } else {
+      setStudioOrigin(null)
+    }
+    setPromptDrawerOpen(true)
+  }
+
+  const openDepositFrom = (el) => {
+    if (el?.getBoundingClientRect) {
+      const r = el.getBoundingClientRect()
+      setDepositOrigin({ x: r.left, y: r.top, w: r.width, h: r.height })
+    } else {
+      setDepositOrigin(null)
+    }
+    setDepositModalOpen(true)
   }
 
   /**
@@ -88,6 +111,8 @@ export function MarketplaceProvider({ children }) {
         setIsDepositPending,
         depositModalOpen,
         setDepositModalOpen,
+        depositOrigin,
+        openDepositFrom,
         connectModalOpen,
         setConnectModalOpen,
         selectedModelId,
@@ -113,6 +138,9 @@ export function MarketplaceProvider({ children }) {
         setLastDeduction,
         promptDrawerOpen,
         setPromptDrawerOpen,
+        studioOrigin,
+        setStudioOrigin,
+        openStudioFrom,
         videoModalOpen,
         setVideoModalOpen,
         ledgerConfigured,

@@ -4,7 +4,7 @@
  */
 import { createPublicClient, createWalletClient, http, isAddress, getAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { robinhoodTestnet } from '../src/web3/chain.js'
+import { robinhood, robinhoodTestnet } from '../src/web3/chain.js'
 import { apiKeyMarketplaceAbi, microToCredits } from '../src/web3/apiKeyMarketplaceAbi.js'
 import { openApiKeyServer } from './vaultDecrypt.js'
 
@@ -15,13 +15,18 @@ const UPSTREAM = {
   gemini: 'https://generativelanguage.googleapis.com',
 }
 
+function marketChain() {
+  return process.env.VITE_DEPOSIT_NETWORK === 'testnet' ? robinhoodTestnet : robinhood
+}
+
 function marketRpc() {
-  return process.env.VITE_ROBINHOOD_RPC || robinhoodTestnet.rpcUrls.default.http[0]
+  const chain = marketChain()
+  return process.env.VITE_ROBINHOOD_RPC || chain.rpcUrls.default.http[0]
 }
 
 function marketPublicClient() {
   return createPublicClient({
-    chain: robinhoodTestnet,
+    chain: marketChain(),
     transport: http(marketRpc()),
   })
 }
@@ -195,7 +200,7 @@ export function vaultApiPlugin() {
             const publicClient = marketPublicClient()
             const walletClient = createWalletClient({
               account,
-              chain: robinhoodTestnet,
+              chain: marketChain(),
               transport: http(marketRpc()),
             })
 

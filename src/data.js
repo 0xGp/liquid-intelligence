@@ -1,7 +1,8 @@
 export const navLinks = [
   { href: '#marketplace', label: 'Marketplace' },
-  { href: '#api-market', label: 'API keys' },
-  { href: '#list-key', label: 'List key' },
+  { href: '#api-market', label: 'API Keys' },
+  { href: '#list-key', label: 'List Key' },
+  { href: '#payments', label: 'Payments' },
   { href: '#about', label: 'How it works' },
 ]
 

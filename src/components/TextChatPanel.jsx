@@ -1,7 +1,10 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { AlertTriangle, Eraser, SendHorizontal, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useMarketplace } from '../context/MarketplaceContext'
+import StudioSheet from './marketplace/StudioSheet'
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import {
   vaultProxy,
@@ -17,17 +20,15 @@ import {
 export default function TextChatPanel() {
   const {
     selectedTextModel,
-    balance,
-    setDepositModalOpen,
+    openDepositFrom,
     promptDrawerOpen,
     setPromptDrawerOpen,
+    studioOrigin,
     chatMessages,
     setChatMessages,
     clearChat,
     lastDeduction,
     setLastDeduction,
-    ledgerConfigured,
-    chargeCredits,
   } = useMarketplace()
   const { activeRental, meterCreditsOnly, rentalForListing } = useApiKeyMarket()
 
@@ -46,9 +47,7 @@ export default function TextChatPanel() {
     ? activeRental.pricePerCallCredits || 0.02
     : selectedTextModel?.price_per_message_credits || 0.02
   const rentalBalance = rental?.creditsRemaining ?? 0
-  const hasInsufficientBalance = usingRental
-    ? rentalBalance < cost
-    : balance < cost
+  const hasInsufficientBalance = usingRental && rentalBalance < cost
   const systemPrompt =
     selectedTextModel?.system_prompt || 'You are a concise assistant.'
   const apiModel = usingRental
@@ -62,15 +61,6 @@ export default function TextChatPanel() {
     : selectedTextModel.tagline
 
   useEffect(() => {
-    if (!promptDrawerOpen) return undefined
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [promptDrawerOpen])
-
-  useEffect(() => {
     if (!scrollRef.current) return
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [chatMessages, sending, promptDrawerOpen])
@@ -79,8 +69,6 @@ export default function TextChatPanel() {
     setError(null)
     setDraft('')
   }, [selectedTextModel?.id])
-
-  if (!promptDrawerOpen) return null
 
   const closeDrawer = () => setPromptDrawerOpen(false)
 
@@ -150,36 +138,21 @@ export default function TextChatPanel() {
     const content = draft.trim()
     if (!content || sending) return
 
-    if (!isConnected) {
-      openConnectModal?.()
-      return
-    }
-    if (!usingRental && !ledgerConfigured) {
-      setError('Credit ledger not configured. Deploy and set VITE_CREDIT_LEDGER_ADDRESS.')
-      return
-    }
-    if (hasInsufficientBalance) {
-      setError(
-        usingRental
-          ? `Need ${cost.toFixed(2)} rental credits. Deposit more ETH on the API market.`
-          : `Need ${cost.toFixed(2)} credits. Deposit ETH to continue.`
-      )
-      if (!usingRental) setDepositModalOpen(true)
-      return
+    if (usingRental) {
+      if (!isConnected) {
+        openConnectModal?.()
+        return
+      }
+      if (hasInsufficientBalance) {
+        setError(
+          `Need ${cost.toFixed(2)} rental credits. Deposit more ETH on the API market.`
+        )
+        return
+      }
     }
 
     setError(null)
     setSending(true)
-
-    if (!usingRental) {
-      try {
-        await chargeCredits(cost)
-      } catch (err) {
-        setError(err?.message || 'On-chain credit spend failed.')
-        setSending(false)
-        return
-      }
-    }
 
     const userMsg = {
       id: `u_${Date.now()}`,
@@ -204,7 +177,7 @@ export default function TextChatPanel() {
           role: 'assistant',
           content: result.text,
           ts: new Date().toLocaleTimeString(),
-          cost,
+          ...(usingRental ? { cost } : {}),
           raw: result.raw,
           finishReason: result.finishReason,
         },
@@ -233,82 +206,75 @@ export default function TextChatPanel() {
   }
 
   return (
-    <div className="prompt-drawer-root" id="text-chat-panel">
-      <button
-        type="button"
-        className="prompt-drawer-backdrop"
-        aria-label="Close chat panel"
-        onClick={closeDrawer}
-      />
-      <aside
-        className="prompt-drawer text-chat-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Chat ${displayName}`}
-      >
-        <header className="prompt-drawer-head">
-          <div className="prompt-drawer-head-text">
-            <p className="config-badge-model">
-              {usingRental
-                ? `Vault proxy · ${activeRental.provider} · ${apiModel}`
-                : `Opper Conversations · ${apiModel}`}
-            </p>
-            <h2 className="config-title">{displayName}</h2>
-            <p className="config-subtitle">{tagline}</p>
-          </div>
-          <div className="prompt-drawer-head-actions">
-            <button
-              type="button"
-              className="view-sdk-code-btn"
-              onClick={clearChat}
-              disabled={chatMessages.length === 0}
-            >
-              Clear
-            </button>
-            <span className="config-rate-pill">
-              <strong>${cost.toFixed(2)}/msg</strong>
-            </span>
-            <button
-              type="button"
-              className="prompt-drawer-close"
-              onClick={closeDrawer}
-              aria-label="Close"
-            >
-              ✕
-            </button>
+    <StudioSheet
+      open={promptDrawerOpen}
+      onClose={closeDrawer}
+      origin={studioOrigin}
+      label={`Chat ${displayName}`}
+      wide
+    >
+        <header className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate font-serif text-[1.375rem] leading-tight text-foreground">
+                {displayName}
+              </h2>
+              <p className="mt-1 truncate text-[13px] text-muted-foreground">{tagline}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground disabled:opacity-40"
+                onClick={clearChat}
+                disabled={chatMessages.length === 0}
+                aria-label="Clear chat"
+              >
+                <Eraser size={15} strokeWidth={1.75} aria-hidden />
+              </button>
+              <button
+                type="button"
+                className="inline-flex size-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+                onClick={closeDrawer}
+                aria-label="Close"
+              >
+                <X size={16} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
           </div>
         </header>
 
-        <div className="prompt-chat-scroll text-chat-scroll" ref={scrollRef}>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6" ref={scrollRef}>
           {chatMessages.length === 0 && (
-            <div className="prompt-chat-bubble is-system">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
               {usingRental ? (
                 <>
-                  Chatting with rented key <strong>{activeRental.keyMasked}</strong>.
-                  Each send decrypts on the Vince vault server and meters rental credits.
-                  Key never leaves the server.
+                  Rented key {activeRental.keyMasked}. Each send decrypts on the vault and
+                  meters rental credits.
                 </>
               ) : (
-                <>
-                  Multi-turn chat via <strong>Opper /v3/compat</strong>. Each send includes
-                  full message history. Costs {cost.toFixed(2)} credits.
-                </>
+                <>Multi-turn chat. Each send includes the full conversation.</>
               )}
-            </div>
+            </p>
           )}
 
           {chatMessages.map((msg) => (
             <div
               key={msg.id}
-              className={`prompt-chat-bubble ${
+              className={cn(
+                'max-w-[92%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed',
                 msg.role === 'user'
-                  ? 'is-user'
+                  ? 'ml-auto bg-foreground text-background'
                   : msg.role === 'system'
-                    ? 'is-system is-error'
-                    : 'is-assistant'
-              }`}
+                    ? 'border border-amber-200 bg-amber-50 text-amber-900'
+                    : 'border border-border bg-background text-foreground',
+              )}
             >
-              <div className="text-chat-meta">
+              <div
+                className={cn(
+                  'mb-1.5 flex flex-wrap gap-x-2 text-[11px]',
+                  msg.role === 'user' ? 'text-background/70' : 'text-muted-foreground',
+                )}
+              >
                 <span>
                   {msg.role === 'user'
                     ? 'You'
@@ -319,28 +285,26 @@ export default function TextChatPanel() {
                 {msg.ts && <span>{msg.ts}</span>}
                 {msg.cost != null && <span>−{msg.cost.toFixed(2)} cr</span>}
               </div>
-              <div className="text-chat-body">{msg.content}</div>
+              <div className="whitespace-pre-wrap">{msg.content}</div>
             </div>
           ))}
 
           {sending && (
-            <div className="prompt-chat-bubble is-assistant is-typing">
-              <span className="job-spinner" /> Thinking…
-            </div>
+            <p className="text-[13px] text-muted-foreground">Thinking…</p>
           )}
 
           {error && (
-            <div className="insufficient-balance-error">
-              <span className="error-icon">⚠️</span>
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
+              <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
               <span>
                 {error}{' '}
                 {hasInsufficientBalance && (
                   <button
                     type="button"
-                    className="inline-deposit-link"
-                    onClick={() => setDepositModalOpen(true)}
+                    className="font-semibold underline underline-offset-2"
+                    onClick={(e) => openDepositFrom(e.currentTarget)}
                   >
-                    [Deposit ETH]
+                    Deposit ETH
                   </button>
                 )}
               </span>
@@ -348,36 +312,35 @@ export default function TextChatPanel() {
           )}
         </div>
 
-        <div className="prompt-drawer-foot text-chat-foot">
-          <div className="estimated-cost-banner">
-            <div className="cost-calc-text">
-              Next message: <strong>{cost.toFixed(2)} credits</strong>
-              {lastDeduction > 0 && (
-                <span className="cost-breakdown">
-                  · last −{lastDeduction.toFixed(2)}
-                </span>
-              )}
+        <div className="shrink-0 space-y-3 border-t border-border bg-card px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+          {usingRental && (
+            <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+              <div className="text-muted-foreground">
+                Next message{' '}
+                <strong className="font-semibold text-foreground">
+                  {cost.toFixed(2)} credits
+                </strong>
+                {lastDeduction > 0 && (
+                  <span className="ms-1.5 text-[12px] text-muted-foreground/80">
+                    · last −{lastDeduction.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <div className="text-[12px] text-muted-foreground">
+                Rental credits{' '}
+                <strong className="font-semibold text-foreground">
+                  {rentalBalance.toFixed(2)}
+                </strong>
+              </div>
             </div>
-            <div className="current-balance-preview">
-              {usingRental ? (
-                <>
-                  Rental credits:{' '}
-                  <strong>{rentalBalance.toFixed(2)}</strong>
-                </>
-              ) : (
-                <>
-                  Balance: <strong>{balance.toFixed(2)} credits</strong>
-                </>
-              )}
-            </div>
-          </div>
+          )}
 
           <label htmlFor={inputId} className="sr-only">
             Message
           </label>
           <textarea
             id={inputId}
-            className="config-textarea text-chat-input"
+            className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-[14px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:ring-[3px] focus-visible:ring-ring/40"
             rows={3}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -387,20 +350,26 @@ export default function TextChatPanel() {
           />
           <button
             type="button"
-            className={`generate-cta-btn${hasInsufficientBalance && isConnected ? ' is-disabled' : ''}`}
+            className={cn(
+              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92 disabled:opacity-40',
+              usingRental &&
+                hasInsufficientBalance &&
+                isConnected &&
+                'bg-muted text-muted-foreground',
+            )}
             onClick={sendMessage}
             disabled={sending || !draft.trim()}
           >
-            {!isConnected
+            {usingRental && !isConnected
               ? 'Connect Wallet to Chat'
-              : hasInsufficientBalance
+              : usingRental && hasInsufficientBalance
                 ? 'Insufficient Credits'
                 : sending
                   ? 'Sending…'
-                  : `Send · ${cost.toFixed(2)} credits`}
+                  : 'Send'}
+            {!sending && <SendHorizontal size={15} strokeWidth={2} aria-hidden />}
           </button>
         </div>
-      </aside>
-    </div>
+    </StudioSheet>
   )
 }

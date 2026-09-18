@@ -9,6 +9,7 @@ import {
   minRentEth,
 } from '../web3/apiKeyMarket'
 import { shortId } from '../web3/agents'
+import EmptyState from '../components/ui/EmptyState'
 
 export default function ApiMarketPage() {
   const { isConnected } = useAccount()
@@ -22,10 +23,10 @@ export default function ApiMarketPage() {
     lastError,
     setLastError,
     txUrl,
-    platformFeeBps,
   } = useApiKeyMarket()
 
   const [kindFilter, setKindFilter] = useState('all')
+  const [query, setQuery] = useState('')
   const [rentAmount, setRentAmount] = useState('0.001')
   const [activeId, setActiveId] = useState(null)
   const [status, setStatus] = useState('')
@@ -33,8 +34,17 @@ export default function ApiMarketPage() {
   const publicListings = useMemo(() => {
     let list = listings.filter((l) => l.status === 'active')
     if (kindFilter !== 'all') list = list.filter((l) => l.kind === kindFilter)
+    const q = query.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (l) =>
+          l.title?.toLowerCase().includes(q) ||
+          l.provider?.toLowerCase().includes(q) ||
+          l.description?.toLowerCase().includes(q)
+      )
+    }
     return list
-  }, [listings, kindFilter])
+  }, [listings, kindFilter, query])
 
   const goBack = () => {
     window.location.hash = '#'
@@ -87,13 +97,11 @@ export default function ApiMarketPage() {
       </button>
       <header className="ak-bar">
         <div className="ak-bar-title">
-          <h1>API key market</h1>
-          <p>
-            Rent listed keys with ETH. Usage meters credits; {platformFeeBps / 100}% stays in
-            treasury, the rest accrues to the lister.
-          </p>
+          <h1>API Keys</h1>
+          <p>Find API access for AI workloads. Rent with ETH — pay only for what you use.</p>
         </div>
         <div className="ak-bar-actions">
+          
           <a className="ak-ghost-btn" href="#list-key">
             List your key
           </a>
@@ -105,6 +113,15 @@ export default function ApiMarketPage() {
 
       <div className="ak-flow">
         <div className="ak-toolbar">
+          <label className="pr-search">
+            <span className="sr-only">Search API keys</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search keys…"
+            />
+          </label>
           <div className="filter-group" role="tablist">
             {[
               { id: 'all', label: 'All' },
@@ -194,7 +211,7 @@ export default function ApiMarketPage() {
                   >
                     {busy && activeId === listing.id
                       ? 'Confirming…'
-                      : `Deposit ${rentAmount} ETH`}
+                      : 'Rent Access →'}
                   </button>
                   <button
                     type="button"
@@ -216,9 +233,22 @@ export default function ApiMarketPage() {
         </div>
 
         {publicListings.length === 0 && (
-          <p className="ak-empty">
-            No active listings. <a href="#list-key">List the first key</a>.
-          </p>
+          <EmptyState
+            title="No API keys yet"
+            description="There aren't any API keys matching your current filters."
+            action={
+              <button
+                type="button"
+                className="ak-solid-btn"
+                onClick={() => {
+                  setKindFilter('all')
+                  setQuery('')
+                }}
+              >
+                Browse all keys
+              </button>
+            }
+          />
         )}
       </div>
     </div>
