@@ -1,0 +1,1949 @@
+import React, { useState, useId, useRef, useEffect } from 'react'
+import { useAccount } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { useMarketplace } from '../context/MarketplaceContext'
+import CodeModal from './CodeModal'
+import { veoPrompts } from '../data/veoCodeSnippets'
+import {
+  omniPrompts,
+  extractOmniVideo,
+  base64ToVideoUrl,
+  fileToBase64,
+} from '../data/omniCodeSnippets'
+import {
+  soraPrompts,
+  soraSizeFromUi,
+  snapSoraDuration,
+  SORA_DURATIONS,
+} from '../data/soraCodeSnippets'
+import {
+  opperPrompts,
+  OPPER_BACKEND_MODELS,
+  opperSizeFromUi,
+  opperParametersFor,
+} from '../data/opperCodeSnippets'
+import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
+import { vaultProxy } from '../web3/vaultProxy'
+
+export default function ConfigPanel() {
+  const {
+    selectedModel,
+    selectedModelId,
+    setSelectedModelId,
+    balance,
+    setDepositModalOpen,
+    jobState,
+    setJobState,
+    jobProgress,
+    setJobProgress,
+    jobResult,
+    setJobResult,
+    jobError,
+    setJobError,
+    jobQueuePos,
+    setJobQueuePos,
+    lastDeduction,
+    setLastDeduction,
+    promptDrawerOpen,
+    setPromptDrawerOpen,
+    setVideoModalOpen,
+    ledgerConfigured,
+    chargeCredits,
+  } = useMarketplace()
+  const { activeRental, meterCreditsOnly, rentalForListing } = useApiKeyMarket()
+
+  const usingRental = Boolean(activeRental && activeRental.studio === 'video')
+  const rental = usingRental ? rentalForListing(activeRental.listingId) : null
+  const rentalBalance = rental?.creditsRemaining ?? 0
+
+  const { isConnected } = useAccount()
+  const { openConnectModal } = useConnectModal()
+
+  const promptId = useId()
+  const durationId = useId()
+  const resolutionId = useId()
+  const audioId = useId()
+
+  const [prompt, setPrompt] = useState(
+    'A cinematic shot of mountains at sunrise'
+  )
+  const [duration, setDuration] = useState(5)
+  const [resolution, setResolution] = useState('1080p')
+  const aspectRatio = '16:9'
+  const [audioEnabled, setAudioEnabled] = useState(true)
+  const [refImage, setRefImage] = useState(null)
+  const [refImages, setRefImages] = useState([null, null, null])
+  const [firstFrame, setFirstFrame] = useState(null)
+  const [lastFrame, setLastFrame] = useState(null)
+  const veoMode = 'text'
+  const omniMode = 'text'
+  const [showCodeModal, setShowCodeModal] = useState(false)
+  const [forceFailTest, setForceFailTest] = useState(false)
+
+  // Kling live API — key from env only (no UI paste)
+  const klingKey = (import.meta.env.VITE_KLING_API_KEY || '').trim()
+  const [apiLogs, setApiLogs] = useState([])
+  const [rawApiResponse, setRawApiResponse] = useState(null)
+
+  // Gemini Omni Flash
+  const [geminiKey, setGeminiKey] = useState(
+    () => import.meta.env.VITE_GEMINI_API_KEY || ''
+  )
+  const [showGeminiKey, setShowGeminiKey] = useState(false)
+  const [previousInteractionId, setPreviousInteractionId] = useState(null)
+  const [editPrompt, setEditPrompt] = useState('Keep everything else the same. ')
+  const [firstFrameFile, setFirstFrameFile] = useState(null)
+  const [lastFrameFile, setLastFrameFile] = useState(null)
+  const [refImageFiles, setRefImageFiles] = useState([null, null, null])
+
+  // OpenAI Sora (Videos API)
+  const [openaiKey, setOpenaiKey] = useState(
+    () => import.meta.env.VITE_OPENAI_API_KEY || ''
+  )
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false)
+  const soraMode = 'text'
+  const [lastSoraVideoId, setLastSoraVideoId] = useState(null)
+  const [soraEditPrompt, setSoraEditPrompt] = useState(
+    'Shift the color palette to teal, sand, and rust, with a warm backlight.'
+  )
+
+  // Opper unified Videos API
+  const [opperKey, setOpperKey] = useState(
+    () => import.meta.env.VITE_OPPER_API_KEY || ''
+  )
+  const [showOpperKey, setShowOpperKey] = useState(false)
+  const [opperBackend, setOpperBackend] = useState(
+    () => OPPER_BACKEND_MODELS[0].id
+  )
+  const opperMode = 'text'
+
+  const isVeo = selectedModel.id === 'veo-3-1'
+  const isKling = selectedModel.id === 'kling-3-0-pro'
+  const isOmni = selectedModel.id === 'gemini-omni-flash'
+  const isSora =
+    selectedModel.id === 'sora-2' || selectedModel.id === 'sora-2-pro'
+  const isSoraPro = selectedModel.id === 'sora-2-pro'
+  const isOpper = selectedModel.id === 'opper-video'
+  const isOpenSora = selectedModel.id === 'open-sora-2'
+  const soraApiModel = selectedModel.api_model || selectedModel.id
+
+  // Model-switch effect to intelligently set appropriate defaults
+  const prevModelId = useRef(selectedModel.id)
+  useEffect(() => {
+    if (prevModelId.current !== selectedModel.id) {
+      if (isOmni) {
+        setPrompt(omniPrompts[0].prompt)
+        setDuration(8)
+        setResolution('720p')
+        setAudioEnabled(true)
+        setPreviousInteractionId(null)
+      } else if (isOpper) {
+        setPrompt(opperPrompts[0].prompt)
+        setDuration(4)
+        setResolution('720p')
+        setAudioEnabled(true)
+        setOpperBackend(OPPER_BACKEND_MODELS[0].id)
+      } else if (isSora) {
+        setPrompt(soraPrompts[0].prompt)
+        setDuration(8)
+        setResolution(isSoraPro ? '1080p' : '720p')
+        setAudioEnabled(true)
+        setLastSoraVideoId(null)
+      } else if (isVeo) {
+        setPrompt("A close up of two people staring at a cryptic drawing on a wall, torchlight flickering. A man murmurs, 'This must be it. That\\'s the secret code.' The woman looks at him and whispering excitedly, 'What did you find?'")
+        setDuration(8)
+        setResolution('1080p')
+        setAudioEnabled(true)
+      } else if (isKling) {
+        setPrompt('A cinematic shot of mountains at sunrise')
+        setDuration(5)
+        setResolution('1080p')
+          } else if (isOpenSora) {
+        setPrompt(
+          'A hyper-detailed cinematic drone tracking shot following an electric vehicle gliding over neon rain-slicked city streets at night, warm reflections, 8k anamorphic depth'
+        )
+        setDuration(8)
+        setResolution('720p')
+          }
+      prevModelId.current = selectedModel.id
+    }
+  }, [selectedModel.id, isVeo, isKling, isOmni, isSora, isSoraPro, isOpper, isOpenSora])
+
+  const opperBackendMeta =
+    OPPER_BACKEND_MODELS.find((m) => m.id === opperBackend) || OPPER_BACKEND_MODELS[0]
+  const opperUsesSoraParams = opperBackend.startsWith('openai/')
+
+  const maxDuration =
+    isVeo && veoMode === 'extension'
+      ? 148
+      : isOmni && omniMode === 'extend'
+        ? selectedModel?.extension_max_seconds || 40
+        : selectedModel?.max_duration_seconds || 8
+  const maxRes = selectedModel?.max_resolution || '1080p'
+  const activeDuration =
+    isSora || (isOpper && opperUsesSoraParams)
+      ? snapSoraDuration(Math.min(duration, maxDuration))
+      : Math.min(duration, maxDuration)
+
+  const availableResolutions = []
+  if (isOmni) {
+    availableResolutions.push('360p', '720p', '1080p', '4K')
+  } else if (isSora || isOpper) {
+    availableResolutions.push('720p')
+    if (isSoraPro || isOpper) availableResolutions.push('1080p')
+  } else if (maxRes === '4K') {
+    availableResolutions.push('720p', '1080p', '4K')
+  } else if (maxRes === '1080p') {
+    availableResolutions.push('720p', '1080p')
+  } else {
+    availableResolutions.push('720p')
+  }
+
+  const activeResolution = availableResolutions.includes(resolution)
+    ? resolution
+    : availableResolutions[availableResolutions.length - 1]
+
+  const resMultiplier = activeResolution === '4K' ? 1.25 : 1.0
+  const baseRate = selectedModel?.price_per_second_credits || 0.1
+  const estimatedCost = usingRental
+    ? +(activeRental.pricePerCallCredits || 0.1).toFixed(2)
+    : +(baseRate * activeDuration * resMultiplier).toFixed(2)
+
+  const hasInsufficientBalance = usingRental
+    ? rentalBalance < estimatedCost
+    : balance < estimatedCost
+  const shortfall = +(estimatedCost - (usingRental ? rentalBalance : balance)).toFixed(2)
+
+  // When a rented video key is active, pick a matching marketplace model card
+  useEffect(() => {
+    if (!usingRental) return
+    const p = String(activeRental.provider || '').toLowerCase()
+    if (p === 'kling' && selectedModelId !== 'kling-3-0-pro') {
+      setSelectedModelId('kling-3-0-pro')
+    } else if ((p === 'opper' || p === 'openai') && selectedModelId !== 'opper-video') {
+      setSelectedModelId('opper-video')
+    } else if (p === 'gemini' && selectedModelId !== 'gemini-omni-flash') {
+      setSelectedModelId('gemini-omni-flash')
+    }
+  }, [usingRental, activeRental, selectedModelId, setSelectedModelId])
+
+  const handleImageUpload = (e, index = null) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      if (index !== null) {
+        setRefImages((prev) => {
+          const next = [...prev]
+          next[index] = url
+          return next
+        })
+        setRefImageFiles((prev) => {
+          const next = [...prev]
+          next[index] = file
+          return next
+        })
+      } else {
+        setRefImage(url)
+        setRefImageFiles([file, null, null])
+      }
+    }
+  }
+
+  const handleFrameUpload = (e, type) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      if (type === 'first') {
+        setFirstFrame(url)
+        setFirstFrameFile(file)
+      }
+      if (type === 'last') {
+        setLastFrame(url)
+        setLastFrameFile(file)
+      }
+    }
+  }
+
+  const applyVeoPreset = (preset) => {
+    setPrompt(preset.prompt)
+    if (preset.duration) setDuration(preset.duration)
+    if (preset.res && availableResolutions.includes(preset.res)) setResolution(preset.res)
+  }
+
+  const applyOmniPreset = (preset) => {
+    setPrompt(preset.prompt)
+    setDuration(8)
+  }
+
+  const applySoraPreset = (preset) => {
+    setPrompt(preset.prompt)
+    setDuration(8)
+  }
+
+  const applyOpperPreset = (preset) => {
+    setPrompt(preset.prompt)
+    setDuration(opperUsesSoraParams ? 4 : 6)
+  }
+
+  const fileToDataUri = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  // Opper Videos API — POST /v3/videos → poll status_url → download presigned url
+  // https://docs.opper.ai/v3-api-reference/video/create-video
+  const executeOpperApi = async () => {
+    const key = opperKey.trim()
+    const viaVault = usingRental
+    if (!viaVault && !key) {
+      setJobState('failed')
+      setJobError('Add an Opper API key (VITE_OPPER_API_KEY) to call POST /v3/videos.')
+      setShowOpperKey(true)
+      return
+    }
+
+    if (opperMode === 'image' && !firstFrameFile) {
+      setJobState('failed')
+      setJobError('Upload a reference image for image-to-video (URL, data-URI, or file).')
+      return
+    }
+
+    setJobState('in_progress')
+    setJobProgress(8)
+    setJobError(null)
+    setJobResult(null)
+    setRawApiResponse(null)
+
+    const size = opperSizeFromUi(aspectRatio, activeResolution)
+    const parameters = opperParametersFor(opperBackend, {
+      seconds: activeDuration,
+      aspectRatio,
+      resolution: activeResolution,
+      size,
+    })
+    const authHeaders = {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    }
+    const logs = [
+      viaVault
+        ? `[Vault·Opper] rented ${activeRental.keyMasked} · ${opperBackend}`
+        : `[Opper] model=${opperBackend} · mode=${opperMode} · ${activeDuration}s · ${activeResolution}`,
+    ]
+    setApiLogs(logs)
+
+    try {
+      const body = {
+        model: opperBackend,
+        prompt,
+        parameters,
+      }
+
+      if (opperMode === 'image' && firstFrameFile) {
+        body.image = await fileToDataUri(firstFrameFile)
+        logs.push(`[image] data-URI · ${(firstFrameFile.size / 1024).toFixed(1)} KB`)
+      }
+
+      logs.push(viaVault ? `[POST] vault → /v3/videos` : `[POST] /api/opper/v3/videos`)
+      setApiLogs([...logs])
+
+      let createData
+      if (viaVault) {
+        const provider =
+          String(activeRental.provider || 'opper').toLowerCase() === 'openai'
+            ? 'openai'
+            : 'opper'
+        const path = provider === 'openai' ? '/v1/videos' : '/v3/videos'
+        const proxied = await vaultProxy({
+          listingId: activeRental.onChain ? activeRental.listingId : undefined,
+          ciphertextHex: activeRental.ciphertextHex || undefined,
+          provider,
+          path,
+          json: body,
+        })
+        createData = proxied.data
+      } else {
+        const createRes = await fetch('/api/opper/v3/videos', {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify(body),
+        })
+        createData = await createRes.json()
+        if (!createRes.ok && createRes.status !== 202) {
+          throw new Error(
+            createData.error?.message ||
+              createData.message ||
+              `HTTP ${createRes.status}`
+          )
+        }
+      }
+      setRawApiResponse(createData)
+
+      const jobId = createData.id
+      let statusUrl = createData.status_url
+      if (!jobId) {
+        throw new Error('Missing id in Opper/OpenAI video response')
+      }
+      if (!statusUrl) {
+        statusUrl = viaVault
+          ? `/v3/artifacts/${jobId}/status`
+          : `/api/opper/v3/artifacts/${jobId}/status`
+      }
+
+      if (typeof statusUrl === 'string' && statusUrl.startsWith('https://api.opper.ai')) {
+        statusUrl = statusUrl.replace('https://api.opper.ai', '/api/opper')
+      } else if (typeof statusUrl === 'string' && statusUrl.startsWith('http://')) {
+        statusUrl = `/api/opper/v3/artifacts/${jobId}/status`
+      }
+
+      logs.push(`Job ${jobId} · polling status_url`)
+      setApiLogs([...logs])
+      setJobProgress(15)
+
+      let status = { status: 'processing' }
+      let attempts = 0
+      while (
+        status.status === 'processing' ||
+        status.status === 'queued' ||
+        status.status === 'pending' ||
+        status.status === 'in_progress'
+      ) {
+        await new Promise((r) => setTimeout(r, 8000))
+        attempts += 1
+        if (viaVault) {
+          const pollPath =
+            typeof statusUrl === 'string' && statusUrl.startsWith('/')
+              ? statusUrl.replace(/^\/api\/opper/, '') || `/v3/artifacts/${jobId}/status`
+              : `/v3/artifacts/${jobId}/status`
+          const proxied = await vaultProxy({
+            listingId: activeRental.onChain ? activeRental.listingId : undefined,
+            ciphertextHex: activeRental.ciphertextHex || undefined,
+            provider: 'opper',
+            path: pollPath,
+            method: 'GET',
+          })
+          status = proxied.data
+        } else {
+          const pollRes = await fetch(statusUrl, {
+            headers: { Authorization: `Bearer ${key}` },
+          })
+          status = await pollRes.json()
+          if (!pollRes.ok) {
+            throw new Error(status.error?.message || status.message || `Poll HTTP ${pollRes.status}`)
+          }
+        }
+        setRawApiResponse(status)
+        setJobProgress(Math.min(90, 15 + attempts * 8))
+        logs.push(`[poll ${attempts}] status=${status.status}`)
+        setApiLogs([...logs])
+        if (status.status === 'failed' || status.status === 'error') {
+          throw new Error(status.error?.message || status.message || 'Video job failed')
+        }
+        if (attempts > 40) throw new Error('Timed out waiting for video')
+      }
+
+      if (status.status === 'failed') {
+        throw new Error(
+          status.error?.message ||
+            status.error ||
+            'Opper video generation failed'
+        )
+      }
+      if (status.status !== 'completed') {
+        throw new Error(`Unexpected status: ${status.status}`)
+      }
+      if (!status.url) {
+        throw new Error('Completed job missing download url')
+      }
+
+      // Per Opper docs: use the presigned `url` from the status poll.
+      // Do NOT re-fetch into a blob in the browser — S3 blocks CORS and
+      // that shows up as a failed generation even when the job succeeded.
+      // https://docs.opper.ai/build/multimodal/video
+      const videoUrl = status.url
+      const usageSec = status.usage?.seconds
+      const usageCost = status.usage?.cost
+
+      setApiLogs((prev) => [
+        ...prev,
+        `✓ Completed · ${status.mime_type || 'video/mp4'}`,
+        status.file_id ? `file_id=${status.file_id}` : '',
+        usageSec != null ? `usage: ${usageSec}s · cost $${usageCost ?? '—'}` : '',
+        `Preview URL ready (presigned, ~1h)`,
+      ].filter(Boolean))
+      setJobProgress(100)
+      setJobState('completed')
+      if (viaVault) {
+        try {
+          await meterCreditsOnly(activeRental.listingId)
+          setLastDeduction(estimatedCost)
+        } catch (meterErr) {
+          logs.push(`⚠ Meter: ${meterErr.message}`)
+          setApiLogs([...logs])
+        }
+      }
+      setJobResult({
+        modelName: viaVault
+          ? `${activeRental.title} · rented`
+          : `${selectedModel.display_name} · ${opperBackendMeta.label}`,
+        prompt,
+        duration: usageSec ?? activeDuration,
+        resolution: activeResolution,
+        aspectRatio,
+        hasAudio: true,
+        cost: estimatedCost,
+        videoUrl,
+        rawResponse: status,
+        timestamp: new Date().toLocaleTimeString(),
+        txHash: `${String(jobId).slice(0, 14)}…`,
+        interactionId: jobId,
+        fileId: status.file_id || null,
+      })
+    } catch (err) {
+      setJobState('failed')
+      setJobError(err.message || 'Opper Videos API request failed')
+      setApiLogs((prev) => [...prev, `✗ ${err.message}`])
+    }
+  }
+
+  // Real OpenAI Sora — Videos API (create → poll → download)
+  const executeSoraApi = async () => {
+    const key = openaiKey.trim()
+    if (!key) {
+      setJobState('failed')
+      setJobError('Add an OpenAI API key (VITE_OPENAI_API_KEY) to call the Videos API.')
+      setShowOpenaiKey(true)
+      return
+    }
+
+    if (soraMode === 'image' && !firstFrameFile) {
+      setJobState('failed')
+      setJobError('Upload an input_reference image (must match output size).')
+      return
+    }
+    if ((soraMode === 'edit' || soraMode === 'extend') && !lastSoraVideoId) {
+      setJobState('failed')
+      setJobError(
+        'Generate a video first (or paste a video_… id) before edit / extend.'
+      )
+      return
+    }
+
+    setJobState('in_progress')
+    setJobProgress(8)
+    setJobError(null)
+    setJobResult(null)
+    setRawApiResponse(null)
+
+    const size = soraSizeFromUi(aspectRatio, activeResolution, isSoraPro)
+    const seconds = String(activeDuration)
+    const authHeaders = { Authorization: `Bearer ${key}` }
+    const logs = [
+      `[Sora] model=${soraApiModel} · mode=${soraMode} · ${size} · ${seconds}s`,
+    ]
+    setApiLogs(logs)
+
+    try {
+      let createRes
+      let createData
+
+      if (soraMode === 'edit') {
+        logs.push(`[POST] /api/openai/v1/videos/edits`)
+        setApiLogs([...logs])
+        createRes = await fetch('/api/openai/v1/videos/edits', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            video: { id: lastSoraVideoId },
+            prompt: soraEditPrompt || prompt,
+          }),
+        })
+      } else if (soraMode === 'extend') {
+        logs.push(`[POST] /api/openai/v1/videos/extensions`)
+        setApiLogs([...logs])
+        createRes = await fetch('/api/openai/v1/videos/extensions', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            video: { id: lastSoraVideoId },
+            prompt: prompt || 'Continue the scene.',
+            seconds,
+          }),
+        })
+      } else {
+        // text or image — multipart create
+        logs.push(`[POST] /api/openai/v1/videos`)
+        setApiLogs([...logs])
+        const form = new FormData()
+        form.append('model', soraApiModel)
+        form.append('prompt', prompt)
+        form.append('size', size)
+        form.append('seconds', seconds)
+        if (soraMode === 'image' && firstFrameFile) {
+          form.append('input_reference', firstFrameFile, firstFrameFile.name)
+        }
+        createRes = await fetch('/api/openai/v1/videos', {
+          method: 'POST',
+          headers: authHeaders,
+          body: form,
+        })
+      }
+
+      createData = await createRes.json()
+      setRawApiResponse(createData)
+
+      if (!createRes.ok) {
+        throw new Error(
+          createData.error?.message ||
+            createData.message ||
+            `HTTP ${createRes.status}`
+        )
+      }
+
+      let video = createData
+      logs.push(`Job ${video.id} · status ${video.status}`)
+      setApiLogs([...logs])
+      setJobProgress(Math.max(12, video.progress || 12))
+
+      // Poll until completed / failed
+      let attempts = 0
+      while (video.status === 'queued' || video.status === 'in_progress') {
+        await new Promise((r) => setTimeout(r, 2500))
+        attempts += 1
+        const pollRes = await fetch(`/api/openai/v1/videos/${video.id}`, {
+          headers: authHeaders,
+        })
+        video = await pollRes.json()
+        setRawApiResponse(video)
+        if (!pollRes.ok) {
+          throw new Error(
+            video.error?.message || video.message || `Poll HTTP ${pollRes.status}`
+          )
+        }
+        const prog = typeof video.progress === 'number' ? video.progress : null
+        setJobProgress(prog != null ? Math.min(92, Math.max(15, prog)) : Math.min(90, 15 + attempts * 3))
+        setApiLogs((prev) => [
+          ...prev.slice(0, 8),
+          `[Poll #${attempts}] ${video.status}${prog != null ? ` · ${prog}%` : ''}`,
+        ])
+      }
+
+      if (video.status === 'failed') {
+        throw new Error(
+          video.error?.message || 'Sora job failed'
+        )
+      }
+      if (video.status !== 'completed') {
+        throw new Error(`Unexpected status: ${video.status}`)
+      }
+
+      logs.push(`Completed ${video.id} — downloading content…`)
+      setApiLogs((prev) => [...prev, `✓ Completed — downloading MP4`])
+      setJobProgress(94)
+
+      const contentRes = await fetch(
+        `/api/openai/v1/videos/${video.id}/content`,
+        { headers: authHeaders }
+      )
+      if (!contentRes.ok) {
+        const errText = await contentRes.text()
+        throw new Error(
+          `Download failed (${contentRes.status}): ${errText.slice(0, 200)}`
+        )
+      }
+      const blob = await contentRes.blob()
+      const videoUrl = URL.createObjectURL(blob)
+
+      setLastSoraVideoId(video.id)
+      setJobProgress(100)
+      setJobState('completed')
+      setApiLogs((prev) => [
+        ...prev,
+        `✓ Saved blob (${(blob.size / 1024 / 1024).toFixed(2)} MB)`,
+      ])
+      setJobResult({
+        modelName: selectedModel.display_name,
+        prompt: soraMode === 'edit' ? soraEditPrompt || prompt : prompt,
+        duration: activeDuration,
+        resolution: activeResolution,
+        aspectRatio,
+        hasAudio: true,
+        cost: estimatedCost,
+        videoUrl,
+        rawResponse: video,
+        timestamp: new Date().toLocaleTimeString(),
+        txHash: `${String(video.id).slice(0, 14)}…`,
+        interactionId: video.id,
+      })
+    } catch (err) {
+      setJobState('failed')
+      setJobError(err.message || 'Sora Videos API request failed')
+      setApiLogs((prev) => [...prev, `✗ ${err.message}`])
+    }
+  }
+
+  // Real Gemini Omni Flash — Interactions API
+  const executeOmniApi = async () => {
+    const key = geminiKey.trim()
+    if (!key) {
+      setJobState('failed')
+      setJobError('Add a Gemini API key to call gemini-omni-1.1-flash.')
+      setShowGeminiKey(true)
+      return
+    }
+
+    setJobState('in_progress')
+    setJobProgress(12)
+    setJobError(null)
+    setJobResult(null)
+    setRawApiResponse(null)
+
+    if (omniMode === 'image' && !firstFrameFile) {
+      setJobState('failed')
+      setJobError('Upload a reference image for Image → Video.')
+      return
+    }
+    if (omniMode === 'interpolation' && (!firstFrameFile || !lastFrameFile)) {
+      setJobState('failed')
+      setJobError('Upload both first and last frames for interpolation.')
+      return
+    }
+    if (omniMode === 'reference' && !refImageFiles.some(Boolean)) {
+      setJobState('failed')
+      setJobError('Upload at least one subject reference image.')
+      return
+    }
+    if ((omniMode === 'edit' || omniMode === 'extend') && !previousInteractionId) {
+      setJobState('failed')
+      setJobError(
+        'Generate a video first (or paste a previous_interaction_id) before edit / extend.'
+      )
+      return
+    }
+
+    const apiRes = activeResolution === '4K' ? '4k' : activeResolution
+    const logs = [
+      `[POST] /api/gemini/v1beta/interactions`,
+      `Model: gemini-omni-1.1-flash`,
+      `Mode: ${omniMode} · ${aspectRatio} · ${apiRes}`,
+    ]
+    setApiLogs(logs)
+
+    try {
+      let input
+      let task
+      let bodyExtra = {}
+
+      if (omniMode === 'edit' && previousInteractionId) {
+        input = editPrompt || prompt
+        bodyExtra.previous_interaction_id = previousInteractionId
+        task = 'edit'
+        logs.push(`previous_interaction_id: ${previousInteractionId}`)
+      } else if (omniMode === 'image' && firstFrameFile) {
+        const data = await fileToBase64(firstFrameFile)
+        input = [
+          { type: 'image', data, mime_type: firstFrameFile.type || 'image/jpeg' },
+          { type: 'text', text: prompt },
+        ]
+        task = 'image_to_video'
+      } else if (omniMode === 'interpolation' && firstFrameFile && lastFrameFile) {
+        const a = await fileToBase64(firstFrameFile)
+        const b = await fileToBase64(lastFrameFile)
+        input = [
+          { type: 'image', data: a, mime_type: firstFrameFile.type || 'image/jpeg' },
+          { type: 'image', data: b, mime_type: lastFrameFile.type || 'image/jpeg' },
+          { type: 'text', text: prompt },
+        ]
+      } else if (omniMode === 'reference') {
+        const parts = []
+        for (const file of refImageFiles) {
+          if (!file) continue
+          const data = await fileToBase64(file)
+          parts.push({ type: 'image', data, mime_type: file.type || 'image/png' })
+        }
+        parts.push({ type: 'text', text: prompt })
+        input = parts
+        task = 'reference_to_video'
+      } else if (omniMode === 'extend' && previousInteractionId) {
+        input = prompt || 'Continue the scene.'
+        bodyExtra.previous_interaction_id = previousInteractionId
+        task = 'extend'
+      } else {
+        input = prompt
+        task = 'text_to_video'
+      }
+
+      setJobProgress(28)
+      setApiLogs([...logs, `Payload input ready (${typeof input === 'string' ? 'text' : 'multimodal'})`])
+
+      const payload = {
+        model: 'gemini-omni-1.1-flash',
+        input,
+        response_format: {
+          type: 'video',
+          aspect_ratio: aspectRatio,
+          resolution: apiRes,
+        },
+        ...bodyExtra,
+      }
+
+      if (task && omniMode !== 'text' && omniMode !== 'interpolation') {
+        payload.generation_config = { video_config: { task } }
+      }
+
+      const res = await fetch('/api/gemini/v1beta/interactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': key,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      setRawApiResponse(data)
+      setJobProgress(78)
+
+      if (!res.ok) {
+        throw new Error(data.error?.message || data.message || `HTTP ${res.status}`)
+      }
+
+      const video = extractOmniVideo(data)
+      if (!video?.data && !video?.uri) {
+        throw new Error('No video in Interactions response. Check steps[].content for type "video".')
+      }
+
+      let videoUrl
+      if (video.data) {
+        videoUrl = base64ToVideoUrl(video.data, video.mime)
+      } else {
+        // URI delivery — open Google-hosted file (may need key)
+        videoUrl = video.uri.includes('?')
+          ? `${video.uri}&key=${encodeURIComponent(key)}`
+          : `${video.uri}?key=${encodeURIComponent(key)}`
+      }
+
+      if (data.id) setPreviousInteractionId(data.id)
+
+      setJobProgress(100)
+      setJobState('completed')
+      setApiLogs((prev) => [
+        ...prev,
+        `✓ Interaction ${data.id || 'ok'} · status ${data.status || 'completed'}`,
+        video.data ? 'Decoded base64 MP4 from response' : `URI delivery: ${video.uri}`,
+      ])
+      setJobResult({
+        modelName: selectedModel.display_name,
+        prompt: typeof input === 'string' ? input : prompt,
+        duration: activeDuration,
+        resolution: activeResolution,
+        aspectRatio,
+        hasAudio: true,
+        cost: estimatedCost,
+        videoUrl,
+        rawResponse: data,
+        timestamp: new Date().toLocaleTimeString(),
+        txHash: data.id ? `${String(data.id).slice(0, 10)}…` : '0xomni…flash',
+        interactionId: data.id || null,
+      })
+    } catch (err) {
+      setJobState('failed')
+      setJobError(err.message || 'Omni Flash request failed')
+      setApiLogs((prev) => [...prev, `✗ ${err.message}`])
+    }
+  }
+
+  // Real Kling API Call
+  const executeKlingApi = async () => {
+    const viaVault = usingRental && String(activeRental.provider || '').toLowerCase() === 'kling'
+    if (!viaVault && !klingKey) {
+      setJobState('failed')
+      setJobError('Set VITE_KLING_API_KEY in .env to call the Kling API.')
+      setApiLogs(['✗ Missing VITE_KLING_API_KEY'])
+      return
+    }
+
+    setJobState('in_progress')
+    setJobProgress(15)
+    setApiLogs([
+      viaVault
+        ? `[Vault·Kling] rented ${activeRental.keyMasked}`
+        : `[POST] /api/kling/generate -> https://kling3api.com/api/generate`,
+      viaVault
+        ? `Key stays on vault server`
+        : `Authorization: Bearer ${klingKey.substring(0, 10)}...${klingKey.slice(-4)}`,
+      `Payload: { type: "pro-text-to-video", prompt: "${prompt.slice(0, 45)}...", duration: ${activeDuration}, aspect_ratio: "${aspectRatio}" }`
+    ])
+    setRawApiResponse(null)
+
+    try {
+      let data
+      if (viaVault) {
+        const proxied = await vaultProxy({
+          listingId: activeRental.onChain ? activeRental.listingId : undefined,
+          ciphertextHex: activeRental.ciphertextHex || undefined,
+          provider: 'kling',
+          path: '/generate',
+          json: {
+            type: 'pro-text-to-video',
+            prompt,
+            duration: activeDuration,
+            aspect_ratio: aspectRatio,
+          },
+        })
+        data = proxied.data
+      } else {
+        const res = await fetch('/api/kling/generate', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${klingKey.trim()}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'pro-text-to-video',
+            prompt,
+            duration: activeDuration,
+            aspect_ratio: aspectRatio,
+          }),
+        })
+        data = await res.json()
+      }
+      setRawApiResponse(data)
+
+      if (data.code === 200 && data.data?.task_id) {
+        const taskId = data.data.task_id
+        setApiLogs((prev) => [
+          ...prev,
+          `✓ Task Created Successfully: ID ${taskId}`,
+          `Starting status polling…`,
+        ])
+        setJobProgress(40)
+
+        let attempts = 0
+        const pollInterval = setInterval(async () => {
+          attempts++
+          try {
+            let sData
+            if (viaVault) {
+              const proxied = await vaultProxy({
+                listingId: activeRental.onChain ? activeRental.listingId : undefined,
+                ciphertextHex: activeRental.ciphertextHex || undefined,
+                provider: 'kling',
+                path: `/status?task_id=${encodeURIComponent(taskId)}`,
+                method: 'GET',
+              })
+              sData = proxied.data
+            } else {
+              const sRes = await fetch(`/api/kling/status?task_id=${taskId}`, {
+                headers: { Authorization: `Bearer ${klingKey.trim()}` },
+              })
+              sData = await sRes.json()
+            }
+            setApiLogs((prev) => [
+              ...prev,
+              `[Polling #${attempts}] Status: ${sData?.data?.status || 'PENDING'}`,
+            ])
+
+            if (sData?.data?.status === 'SUCCESS') {
+              clearInterval(pollInterval)
+              const response = sData.data.response
+              const resultUrls = Array.isArray(response?.resultUrls)
+                ? response.resultUrls
+                : Array.isArray(response)
+                  ? response
+                  : []
+              const videoUrl =
+                resultUrls.find((u) => typeof u === 'string' && u.startsWith('http')) ||
+                null
+
+              if (!videoUrl) {
+                setJobState('failed')
+                setJobError('Kling returned SUCCESS but no resultUrls video URL.')
+                setRawApiResponse(sData)
+                return
+              }
+
+              if (viaVault) {
+                try {
+                  await meterCreditsOnly(activeRental.listingId)
+                  setLastDeduction(estimatedCost)
+                } catch (meterErr) {
+                  setApiLogs((prev) => [...prev, `⚠ Meter: ${meterErr.message}`])
+                }
+              }
+
+              setJobProgress(100)
+              setJobState('completed')
+              setJobResult({
+                modelName: viaVault ? `${activeRental.title} · rented` : selectedModel.display_name,
+                prompt,
+                duration: activeDuration,
+                resolution: activeResolution,
+                aspectRatio,
+                hasAudio: false,
+                cost: estimatedCost,
+                videoUrl,
+                rawResponse: sData,
+                timestamp: new Date().toLocaleTimeString(),
+                txHash: `0x${taskId.substring(0, 8)}...fe73`,
+              })
+            } else if (sData?.data?.status === 'FAILED') {
+              clearInterval(pollInterval)
+              setJobState('failed')
+              setJobError(`Kling Generation Failed: ${sData.data.error_message || 'Task failed'}`)
+            } else {
+              setJobProgress((p) => Math.min(95, p + 10))
+            }
+          } catch (pollErr) {
+            console.error('Polling error:', pollErr)
+          }
+        }, 5000)
+      } else {
+        setJobState('failed')
+        const errMsg = data.message || 'API Call Failed'
+        setJobError(`Kling API returned: "${errMsg}" (code: ${data.code || '—'})`)
+      }
+    } catch (err) {
+      setJobState('failed')
+      setJobError(`Failed to connect to Kling API: ${err.message}`)
+      setApiLogs((prev) => [...prev, `❌ Connection error: ${err.message}`])
+    }
+  }
+
+  // Test mode: render completed MP4 video directly
+  const handleProceedWithSampleVideo = async () => {
+    try {
+      await chargeCredits(estimatedCost)
+    } catch (err) {
+      setJobError(err?.message || 'On-chain credit spend failed.')
+      return
+    }
+    setJobState('completed')
+    setJobProgress(100)
+    setJobResult({
+      modelName: selectedModel.display_name,
+      prompt,
+      duration: activeDuration,
+      resolution: activeResolution,
+      aspectRatio,
+      hasAudio: isVeo || isOmni || isSora || isOpper,
+      cost: estimatedCost,
+      videoUrl: '/assets/models/kling_sample.mp4',
+      rawResponse: rawApiResponse || { message: 'Sample MP4 preview' },
+      timestamp: new Date().toLocaleTimeString(),
+      txHash: isKling ? '0x4e83d81b...c920' : isOpenSora ? '0x17c0329c...fe73' : '0x9a4f210d...be31'
+    })
+    setVideoModalOpen(true)
+  }
+
+  const handleGenerate = async () => {
+    if (!isConnected) {
+      openConnectModal?.()
+      return
+    }
+    if (!usingRental && !ledgerConfigured) {
+      setJobError('Credit ledger not configured. Deploy and set VITE_CREDIT_LEDGER_ADDRESS.')
+      return
+    }
+    if (hasInsufficientBalance) {
+      if (usingRental) {
+        setJobError(
+          `Need ${estimatedCost.toFixed(2)} rental credits (you have ${rentalBalance.toFixed(2)}). Deposit more ETH on the API market.`
+        )
+      } else {
+        setDepositModalOpen(true)
+      }
+      return
+    }
+
+    try {
+      setJobError(null)
+      if (!usingRental) {
+        setApiLogs((prev) => [
+          ...prev,
+          `Confirm on-chain spend of ${estimatedCost.toFixed(2)} credits…`,
+        ])
+        await chargeCredits(estimatedCost)
+        setApiLogs((prev) => [...prev, '✓ Credits spent on-chain'])
+      } else {
+        setApiLogs((prev) => [
+          ...prev,
+          `Using rented key ${activeRental.keyMasked} via vault (meter after success)…`,
+        ])
+      }
+    } catch (err) {
+      setJobError(err?.message || 'On-chain credit spend failed.')
+      setJobState('idle')
+      return
+    }
+
+    if (isOpper) {
+      executeOpperApi()
+      return
+    }
+
+    if (isOmni) {
+      executeOmniApi()
+      return
+    }
+
+    if (isSora) {
+      executeSoraApi()
+      return
+    }
+
+    if (isKling) {
+      executeKlingApi()
+      return
+    }
+
+    // Standard simulated generation for Veo / OpenSora
+    setJobState('in_progress')
+    setJobProgress(8)
+    setJobQueuePos(2)
+    setJobError(null)
+    setJobResult(null)
+
+    setTimeout(() => { setJobProgress(34); setJobQueuePos(1) }, 600)
+    setTimeout(() => { setJobProgress(70); setJobQueuePos(null) }, 1300)
+    setTimeout(() => { setJobProgress(94) }, 1900)
+    setTimeout(() => {
+      if (forceFailTest) {
+        setJobState('failed')
+        setJobError('Something went wrong generating your video.')
+      } else {
+        setJobState('completed')
+        setJobProgress(100)
+        setJobResult({
+          modelName: selectedModel.display_name,
+          prompt,
+          duration: activeDuration,
+          resolution: activeResolution,
+          aspectRatio,
+          hasAudio: selectedModel.native_audio && audioEnabled,
+          cost: estimatedCost,
+          videoUrl: '/assets/models/kling_sample.mp4',
+          timestamp: new Date().toLocaleTimeString(),
+          txHash: isOpenSora
+            ? '0x17c0329c...fe73'
+            : isVeo
+            ? '0x9a4f210d...be31'
+            : `0x17c0${Math.random().toString(16).substring(2, 6)}...${Math.random().toString(16).substring(2, 6)}`,
+        })
+      }
+    }, 2500)
+  }
+
+  const handleRetry = () => {
+    setJobError(null)
+    setJobState('idle')
+    setForceFailTest(false)
+  }
+
+  // When generation finishes, open the video modal popup
+  useEffect(() => {
+    if (jobState === 'completed' && jobResult) {
+      setVideoModalOpen(true)
+    }
+  }, [jobState, jobResult, setVideoModalOpen])
+
+  // Lock body scroll while drawer is open
+  useEffect(() => {
+    if (!promptDrawerOpen) return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [promptDrawerOpen])
+
+  const closeDrawer = () => {
+    setPromptDrawerOpen(false)
+  }
+
+  if (!promptDrawerOpen) return null
+
+  return (
+    <div className="prompt-drawer-root" id="config-panel">
+      <button
+        type="button"
+        className="prompt-drawer-backdrop"
+        aria-label="Close prompt panel"
+        onClick={closeDrawer}
+      />
+      <aside
+        className="prompt-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Prompt ${selectedModel.display_name}`}
+      >
+      <CodeModal
+        isOpen={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        modelId={selectedModel.id}
+      />
+
+      <header className="prompt-drawer-head">
+        <div className="prompt-drawer-head-text">
+          <p className="config-badge-model">{selectedModel.provider}</p>
+          <h2 className="config-title">{selectedModel.display_name}</h2>
+          <p className="config-subtitle">{selectedModel.tagline}</p>
+        </div>
+        <div className="prompt-drawer-head-actions">
+          <button
+            type="button"
+            className="view-sdk-code-btn"
+            onClick={() => setShowCodeModal(true)}
+          >
+            Code
+          </button>
+          <span className="config-rate-pill">
+            <strong>${selectedModel.price_per_second_credits.toFixed(2)}/sec</strong>
+          </span>
+          <button
+            type="button"
+            className="prompt-drawer-close"
+            onClick={closeDrawer}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      </header>
+
+      <div className="prompt-chat-scroll">
+        <div className="prompt-chat-bubble is-system">
+          Describe the shot. Adjust settings below, then send to generate with{' '}
+          <strong>{selectedModel.display_name}</strong>.
+        </div>
+
+        {prompt.trim() && jobState !== 'idle' && (
+          <div className="prompt-chat-bubble is-user">
+            {prompt}
+          </div>
+        )}
+
+      <div className="config-panel-card is-chat-panel">
+
+        {/* ── GOOGLE VEO 3.1 OFFICIAL NOTICE ── */}
+        {isVeo && (
+          <div className="model-integration-banner veo-banner">
+            <div className="banner-left">
+              <span className="banner-icon">ℹ️</span>
+              <div className="banner-text">
+                <strong>Official Gemini Note:</strong> This feature is currently only available with the <code>generateContent</code> API. Powered by <code>veo-3.1-generate-preview</code> with native audio &amp; up to 4K.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="banner-action-btn"
+              onClick={() => setShowCodeModal(true)}
+            >
+              View JavaScript / Python SDK →
+            </button>
+          </div>
+        )}
+
+        {/* ── KLING 3.0 PRO INTEGRATION BANNER ── */}
+        {isKling && (
+          <div className="model-integration-banner kling-banner">
+            <div className="banner-left">
+              <span className="banner-icon">⚡</span>
+              <div className="banner-text">
+                <strong>Kling 3.0 Pro API:</strong> Calling{' '}
+                <code>https://kling3api.com/api/generate</code>
+                {klingKey ? (
+                  <span className="kling-active-key-pill" title="Key from VITE_KLING_API_KEY">
+                    Key: {klingKey.substring(0, 10)}…{klingKey.slice(-4)}
+                  </span>
+                ) : (
+                  <span className="kling-active-key-pill">Set VITE_KLING_API_KEY</span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="banner-action-btn"
+              onClick={() => setShowCodeModal(true)}
+            >
+              View Fetch Code →
+            </button>
+          </div>
+        )}
+
+        {/* ── OPENAI SORA BANNER ── */}
+        {isSora && (
+          <div className="model-integration-banner kling-banner">
+            <div className="banner-left">
+              <span className="banner-icon">◎</span>
+              <div className="banner-text">
+                <strong>OpenAI Sora:</strong> Videos API · <code>{soraApiModel}</code>
+                {openaiKey ? (
+                  <span className="kling-active-key-pill" title="OpenAI API key from env/UI">
+                    Key: {openaiKey.substring(0, 7)}…{openaiKey.slice(-4)}
+                  </span>
+                ) : (
+                  <span className="kling-active-key-pill">Set VITE_OPENAI_API_KEY</span>
+                )}
+                {lastSoraVideoId && (
+                  <span className="kling-active-key-pill" title={lastSoraVideoId}>
+                    video: {lastSoraVideoId.slice(0, 14)}…
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="banner-actions-group">
+              <button
+                type="button"
+                className="banner-key-toggle-btn"
+                onClick={() => setShowOpenaiKey((v) => !v)}
+              >
+                {showOpenaiKey ? 'Hide Key' : 'Edit OpenAI Key'}
+              </button>
+              <button
+                type="button"
+                className="banner-action-btn"
+                onClick={() => setShowCodeModal(true)}
+              >
+                View Videos SDK →
+              </button>
+            </div>
+
+            {showOpenaiKey && (
+              <div className="kling-key-edit-box">
+                <label className="key-edit-label">
+                  OpenAI API Key (VITE_OPENAI_API_KEY in .env):
+                </label>
+                <div className="key-edit-row">
+                  <input
+                    type="password"
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                    placeholder="sk-…"
+                    className="key-input-field"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── OPPER VIDEOS BANNER ── */}
+        {isOpper && (
+          <div className="model-integration-banner veo-banner">
+            <div className="banner-left">
+              <span className="banner-icon">◇</span>
+              <div className="banner-text">
+                <strong>Opper Videos:</strong> POST /v3/videos ·{' '}
+                <code>{opperBackend}</code>
+                {opperKey ? (
+                  <span className="kling-active-key-pill" title="Opper API key">
+                    Key: {opperKey.substring(0, 8)}…{opperKey.slice(-4)}
+                  </span>
+                ) : (
+                  <span className="kling-active-key-pill">Set VITE_OPPER_API_KEY</span>
+                )}
+              </div>
+            </div>
+            <div className="banner-actions-group">
+              <button
+                type="button"
+                className="banner-key-toggle-btn"
+                onClick={() => setShowOpperKey((v) => !v)}
+              >
+                {showOpperKey ? 'Hide Key' : 'Edit Opper Key'}
+              </button>
+              <button
+                type="button"
+                className="banner-action-btn"
+                onClick={() => setShowCodeModal(true)}
+              >
+                View /v3/videos SDK →
+              </button>
+            </div>
+
+            {showOpperKey && (
+              <div className="kling-key-edit-box">
+                <label className="key-edit-label">
+                  Opper API Key (VITE_OPPER_API_KEY in .env):
+                </label>
+                <div className="key-edit-row">
+                  <input
+                    type="password"
+                    value={opperKey}
+                    onChange={(e) => setOpperKey(e.target.value)}
+                    placeholder="op-…"
+                    className="key-input-field"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── In Progress (with Live API Call Logs) ── */}
+        {jobState === 'in_progress' && (
+          <div className="job-in-progress-box">
+            <div className="job-status-spinner-row">
+              <span className="job-spinner" />
+              <div>
+                <h3 className="job-status-title">
+                  {isOpper
+                    ? `Calling Opper Videos API · ${opperBackend}...`
+                    : isSora
+                    ? `Calling OpenAI Videos API · ${soraApiModel}...`
+                    : isOmni
+                    ? 'Calling Gemini Omni Flash · POST /v1beta/interactions...'
+                    : isKling
+                    ? 'Calling live Kling API https://kling3api.com/api/generate...'
+                    : isVeo
+                    ? 'Calling Gemini API veo-3.1-generate-preview...'
+                    : 'Generating your video... this usually takes 30–90 seconds.'}
+                </h3>
+                <p className="job-queue-info">
+                  {isOpper
+                    ? 'POST /v3/videos → poll status_url → download presigned url'
+                    : isSora
+                    ? 'Create → poll GET /v1/videos/{id} → download content (may take several minutes)'
+                    : isOmni
+                    ? 'Interactions API · multimodal video generation'
+                    : isKling
+                      ? 'Live HTTP Request in progress · Polling status'
+                      : 'Dispatching compute job on Robinhood chain'}
+                </p>
+              </div>
+            </div>
+
+            <div className="job-progress-track">
+              <div className="job-progress-bar" style={{ width: `${jobProgress}%` }} />
+            </div>
+
+            <div className="job-progress-meta">
+              <span>Model: {selectedModel.display_name}</span>
+              <span>{jobProgress}%</span>
+            </div>
+
+            {/* Live API Console Logs */}
+            {(isKling || isOmni || isSora || isOpper) && apiLogs.length > 0 && (
+              <div className="live-api-logs-console">
+                <div className="api-logs-header">
+                  <span>
+                    {isOpper
+                      ? 'Network Console (Opper /v3/videos)'
+                      : isSora
+                      ? 'Network Console (OpenAI Videos API)'
+                      : isOmni
+                        ? 'Network Console (Gemini Interactions)'
+                        : 'Network Console (Kling 3.0 API)'}
+                  </span>
+                  <span className="live-pill">Live</span>
+                </div>
+                <div className="api-logs-content">
+                  {apiLogs.map((log, i) => (
+                    <div key={i} className="log-line">
+                      <span className="log-arrow">&gt;</span> {log}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Failed State / Real API Error Handler ── */}
+        {jobState === 'failed' && (
+          <div className="job-failed-box">
+            <div className="failed-icon">⚠️</div>
+            <div className="failed-details">
+              <h4 className="failed-title">API Call Completed with Response Error</h4>
+              <p className="failed-msg">{jobError}</p>
+
+              {rawApiResponse && (
+                <div className="raw-response-box">
+                  <span className="raw-response-label">
+                    Raw API Response
+                    {isOpper
+                      ? ' from Opper Videos API:'
+                      : isSora
+                      ? ' from OpenAI Videos API:'
+                      : isOmni
+                      ? ' from Interactions API:'
+                      : isKling
+                        ? ' from kling3api.com:'
+                        : ':'}
+                  </span>
+                  <pre className="raw-response-json">{JSON.stringify(rawApiResponse, null, 2)}</pre>
+                </div>
+              )}
+
+              {isKling && rawApiResponse?.code === 402 && (
+                <div className="no-credit-solution-box">
+                  <p className="no-credit-help">
+                    <strong>402 No credit</strong> from <code>kling3api.com</code>. Update{' '}
+                    <code>VITE_KLING_API_KEY</code> in <code>.env</code> with a funded key, then restart the
+                    dev server — or preview a sample MP4 below.
+                  </p>
+                  <div className="no-credit-actions">
+                    <button type="button" className="retry-btn" onClick={executeKlingApi}>
+                      Retry
+                    </button>
+                    <button
+                      type="button"
+                      className="sample-preview-btn"
+                      onClick={handleProceedWithSampleVideo}
+                    >
+                      ▶ Play Rendered MP4 Video
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(!isKling || rawApiResponse?.code !== 402) && (
+                <div className="failed-actions-row">
+                  <button
+                    type="button"
+                    className="retry-btn"
+                    onClick={
+                      isOpper
+                        ? executeOpperApi
+                        : isSora
+                          ? executeSoraApi
+                          : isOmni
+                            ? executeOmniApi
+                            : handleRetry
+                    }
+                  >
+                    Retry
+                  </button>
+                  <button
+                    type="button"
+                    className="sample-preview-btn"
+                    onClick={handleProceedWithSampleVideo}
+                  >
+                    ▶ View Rendered MP4 Video
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Completed: open video modal — keep chat status here ── */}
+        {jobState === 'completed' && jobResult && (
+          <div className="prompt-chat-bubble is-system is-done">
+            <p>Video ready.</p>
+            <button
+              type="button"
+              className="prompt-open-video-btn"
+              onClick={() => setVideoModalOpen(true)}
+            >
+              Open video
+            </button>
+          </div>
+        )}
+
+        {/* ── Idle / active: Configuration Form (composer) ── */}
+        {(jobState === 'idle' || jobState === 'completed') && (
+          <div className="config-form prompt-composer">
+            {/* Prompt presets for Veo */}
+            {isVeo && (
+              <div className="prompt-presets-row">
+                <span className="presets-label">Prompt Presets:</span>
+                <div className="presets-list">
+                  {veoPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="preset-chip"
+                      onClick={() => applyVeoPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Prompt presets for Omni */}
+            {isOmni && (
+              <div className="prompt-presets-row">
+                <span className="presets-label">Omni Presets:</span>
+                <div className="presets-list">
+                  {omniPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="preset-chip"
+                      onClick={() => applyOmniPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Prompt presets for Sora */}
+            {isSora && (
+              <div className="prompt-presets-row">
+                <span className="presets-label">Sora Presets:</span>
+                <div className="presets-list">
+                  {soraPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="preset-chip"
+                      onClick={() => applySoraPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Prompt presets for Opper */}
+            {isOpper && (
+              <div className="prompt-presets-row">
+                <span className="presets-label">Opper Presets:</span>
+                <div className="presets-list">
+                  {opperPrompts.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="preset-chip"
+                      onClick={() => applyOpperPreset(p)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Prompt presets for Kling */}
+            {isKling && (
+              <div className="prompt-presets-row">
+                <span className="presets-label">Kling Presets:</span>
+                <div className="presets-list">
+                  <button
+                    type="button"
+                    className="preset-chip"
+                    onClick={() => {
+                      setPrompt('A cinematic shot of mountains at sunrise')
+                      setDuration(5)
+                                      }}
+                  >
+                    Sunrise Mountains (5s)
+                  </button>
+                  <button
+                    type="button"
+                    className="preset-chip"
+                    onClick={() => {
+                      setPrompt('A hyper-realistic character walking through Tokyo neon rain in slow motion, reflections, high consistency')
+                      setDuration(10)
+                                      }}
+                  >
+                    Tokyo Neon Motion (10s)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Prompt Input */}
+            <div className="config-field">
+              <label htmlFor={promptId} className="field-label">
+                Prompt
+                <span className="field-sub-tag">Text → video</span>
+              </label>
+              <textarea
+                id={promptId}
+                rows={4}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe the video you want to generate..."
+                className="config-textarea"
+              />
+            </div>
+
+            {/* Duration & Resolution */}
+            <div className="config-grid-2col">
+              <div className="config-field">
+                <div className="field-label-between">
+                  <label htmlFor={durationId} className="field-label">Duration</label>
+                  <span className="field-val-display">{activeDuration} seconds</span>
+                </div>
+                <input
+                  type="range"
+                  id={durationId}
+                  min={isSora || (isOpper && opperUsesSoraParams) ? SORA_DURATIONS[0] : 2}
+                  max={maxDuration}
+                  step={isSora || (isOpper && opperUsesSoraParams) ? 4 : 1}
+                  value={activeDuration}
+                  onChange={(e) =>
+                    setDuration(
+                      isSora || (isOpper && opperUsesSoraParams)
+                        ? snapSoraDuration(parseInt(e.target.value, 10))
+                        : parseInt(e.target.value, 10)
+                    )
+                  }
+                  className="config-range"
+                />
+                <div className="range-bounds">
+                  <span>
+                    {isSora || (isOpper && opperUsesSoraParams)
+                      ? `${SORA_DURATIONS[0]}s`
+                      : '2s'}
+                  </span>
+                  <span>
+                    max {maxDuration}s
+                    {isVeo && veoMode === 'extension' ? ' (extended)' : ''}
+                    {isSora || (isOpper && opperUsesSoraParams)
+                      ? ' · 4/8/12/16/20'
+                      : ''}
+                  </span>
+                </div>
+              </div>
+
+              <div className="config-field">
+                <label htmlFor={resolutionId} className="field-label">Resolution</label>
+                <select
+                  id={resolutionId}
+                  value={activeResolution}
+                  onChange={(e) => setResolution(e.target.value)}
+                  className="config-select"
+                >
+                  {availableResolutions.map((res) => (
+                    <option key={res} value={res}>
+                      {res}{res === '4K' ? ' (Ultra High Fidelity · 8s length)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <span className="field-hint">
+                  Max: {maxRes}
+                  {activeResolution === '4K' ? ' · 1.25× tier' : ''}
+                  {isSora
+                    ? ` · API size ${soraSizeFromUi(aspectRatio, activeResolution, isSoraPro)}`
+                    : isOpper
+                      ? ` · size ${opperSizeFromUi(aspectRatio, activeResolution)}`
+                      : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Native Audio Setting */}
+            {selectedModel.native_audio && (
+              <div className="config-field audio-toggle-field">
+                <label htmlFor={audioId} className="audio-toggle-label">
+                  <input
+                    type="checkbox"
+                    id={audioId}
+                    checked={audioEnabled}
+                    onChange={(e) => setAudioEnabled(e.target.checked)}
+                    className="config-checkbox"
+                    disabled={isVeo || isOmni || isSora || isOpper}
+                  />
+                  <span>
+                    <strong>
+                      Generate Native Audio{' '}
+                      {(isVeo || isOmni || isSora || isOpper) && (
+                        <span className="audio-always-on-badge">Always On</span>
+                      )}
+                    </strong>
+                    <small>
+                      {isOpper
+                        ? 'Audio depends on the provider model routed through Opper'
+                        : isSora
+                        ? 'Sora generates richly detailed clips with audio from your prompt'
+                        : isOmni
+                        ? 'Omni Flash generates synchronized audio with the video by default'
+                        : isVeo
+                          ? 'Veo 3.1 natively generates synchronized dialogue, sound effects & ambient sound'
+                          : `Synchronized dialogue and sound effects from ${selectedModel.display_name}`}
+                    </small>
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
+      {(jobState === 'idle' || jobState === 'completed') && (
+        <div className="prompt-drawer-foot">
+          <div className="estimated-cost-banner">
+            <div className="cost-calc-text">
+              Estimated cost:{' '}
+              <strong>{estimatedCost.toFixed(2)} credits</strong>
+              <span className="cost-breakdown">
+                ({activeDuration}s × ${baseRate.toFixed(2)}/sec
+                {resMultiplier > 1 ? ` × ${resMultiplier} res` : ''})
+              </span>
+            </div>
+            <div className="current-balance-preview">
+              Your balance: <strong>{balance.toFixed(2)} credits</strong>
+            </div>
+          </div>
+
+          {hasInsufficientBalance && isConnected && (
+            <div className="insufficient-balance-error">
+              <span className="error-icon">⚠️</span>
+              <span>
+                You need {shortfall.toFixed(2)} more credits for this job.{' '}
+                <button type="button" className="inline-deposit-link" onClick={() => setDepositModalOpen(true)}>
+                  [Deposit ETH]
+                </button>
+              </span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={`generate-cta-btn${hasInsufficientBalance && isConnected ? ' is-disabled' : ''}`}
+            onClick={() => {
+              if (jobState === 'completed') {
+                setJobState('idle')
+                setJobResult(null)
+              }
+              handleGenerate()
+            }}
+          >
+            {!isConnected
+              ? 'Connect Wallet to Generate'
+              : hasInsufficientBalance
+              ? 'Insufficient Credits'
+              : isOpper
+              ? `Generate · Opper (${estimatedCost.toFixed(2)})`
+              : isOmni
+              ? `Generate · Omni (${estimatedCost.toFixed(2)})`
+              : isSora
+              ? `Generate · Sora (${estimatedCost.toFixed(2)})`
+              : isKling
+              ? `Generate · Kling (${estimatedCost.toFixed(2)})`
+              : `Generate (${estimatedCost.toFixed(2)} Credits)`}
+          </button>
+        </div>
+      )}
+      </aside>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────
+   Real HTML5 Video Result Player (NO DEMO PICTURES)
+───────────────────────────────────────────────────────── */
+function VideoResultPlayer({ jobResult, onReset }) {
+  const [downloaded, setDownloaded] = useState(false)
+  const [showPayload, setShowPayload] = useState(false)
+  const videoRef = useRef(null)
+
+  const isPortrait = jobResult.aspectRatio === '9:16'
+  const videoSource = jobResult.videoUrl || '/assets/models/kling_sample.mp4'
+
+  return (
+    <div className={`video-result-player ${isPortrait ? 'is-portrait-layout' : ''}`}>
+      {/* Header */}
+      <div className="vr-header">
+        <div className="vr-header-top">
+          <div className="vr-success-badge">
+            <span className="vr-check-icon">✓</span>
+            <span>Generation Complete</span>
+          </div>
+          <span className="vr-tx-hash">
+            {jobResult.interactionId
+              ? `Interaction: ${jobResult.interactionId}`
+              : `Settled: ${jobResult.txHash}`}
+          </span>
+        </div>
+        <div className="vr-preview-title-row">
+          <span className="vr-preview-title">Generated output preview▶</span>
+          <div className="vr-preview-quick-badges">
+            <span className="vr-quick-badge">{jobResult.resolution}</span>
+            <span className="vr-quick-badge">{jobResult.duration}s</span>
+            <span className="vr-quick-badge">{jobResult.aspectRatio || '16:9'}</span>
+            <span className="vr-quick-badge vr-real-video-badge">HTML5 Video Stream</span>
+            {jobResult.hasAudio && <span className="vr-quick-badge vr-badge-audio">🔊 Audio</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Real HTML5 Video Player */}
+      <div className="vr-player-wrap">
+        <div className={`vr-video-frame ${isPortrait ? 'is-portrait-frame' : ''}`}>
+          <video
+            ref={videoRef}
+            src={videoSource}
+            controls
+            autoPlay
+            loop
+            playsInline
+            className="vr-html5-video"
+            title="Generated video output"
+          />
+        </div>
+      </div>
+
+      {/* Prompt and Debited Cost Meta */}
+      <div className="vr-meta">
+        <div className="vr-meta-left">
+          <p className="vr-prompt-label">Prompt</p>
+          <p className="vr-prompt-text">"{jobResult.prompt}"</p>
+          {jobResult.rawResponse && (
+            <button
+              type="button"
+              className="view-raw-payload-btn"
+              onClick={() => setShowPayload((v) => !v)}
+            >
+              {showPayload ? '▼ Hide Raw API Payload' : '▶ View Raw API Payload'}
+            </button>
+          )}
+        </div>
+        <div className="vr-cost-block">
+          <span className="vr-cost-label">Debited</span>
+          <strong className="vr-cost-value">{jobResult.cost.toFixed(2)} credits</strong>
+        </div>
+      </div>
+
+      {/* Raw Payload Drawer */}
+      {showPayload && jobResult.rawResponse && (
+        <div className="vr-payload-drawer">
+          <pre>{JSON.stringify(jobResult.rawResponse, null, 2)}</pre>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="vr-actions">
+        <a
+          href={videoSource}
+          download="generated_video.mp4"
+          className={`vr-action-btn vr-primary${downloaded ? ' vr-downloaded' : ''}`}
+          onClick={() => setDownloaded(true)}
+        >
+          {downloaded ? '✓ Saved MP4' : 'Download MP4'}
+        </a>
+        <button type="button" className="vr-action-btn vr-secondary" onClick={onReset}>
+          Generate Another
+        </button>
+        <button
+          type="button"
+          className="vr-action-btn vr-share"
+          onClick={() => navigator.clipboard?.writeText(window.location.href)}
+        >
+          Copy Link
+        </button>
+      </div>
+    </div>
+  )
+}

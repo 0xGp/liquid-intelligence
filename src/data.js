@@ -1,70 +1,71 @@
 export const navLinks = [
-  { href: '#work', label: 'Use cases' },
-  { href: '#rail', label: 'Rent agents' },
+  { href: '#marketplace', label: 'Marketplace' },
+  { href: '#api-market', label: 'API keys' },
+  { href: '#list-key', label: 'List key' },
   { href: '#about', label: 'How it works' },
-  { href: '#services', label: 'Features' },
 ]
 
 export const projects = [
   {
-    meta: ['Research networks', 'Multi-agent'],
-    title: 'A lead agent, paying its own team',
-    desc: 'A lead agent fans out sub-queries to specialist agents and pays each one only for what it actually uses.',
+    meta: ['Google DeepMind', 'Native Audio'],
+    title: 'Google Veo 3.1: Cinematic 4K',
+    desc: 'Cinematic quality clips with native synchronized audio, dialogue, and sound effects directly from the model up to 148 seconds.',
     visual: 'network',
   },
   {
-    meta: ['Trading systems', 'Autonomous'],
-    title: 'Bots paying for signal, per query',
-    desc: 'Autonomous trading bots pay data and signal providers per query, with spend capped to strategy budget in real time.',
+    meta: ['Kuaishou', 'Character Motion'],
+    title: 'Kling 3.0 Pro: Realistic Human Movement',
+    desc: 'Best-in-class physics and character motion consistency across complex shot transitions, with Kling Omni lip-sync capabilities.',
     visual: 'signal',
   },
   {
-    meta: ['Orchestration', 'Sub-agents'],
-    title: 'A marketplace of sub-agents',
-    desc: 'Orchestrators delegate tasks to a marketplace of sub-agents and settle per completed unit of work.',
+    meta: ['MiniMax', 'High Throughput'],
+    title: 'MiniMax Hailuo 2.3 Pro: Rapid Social Clips',
+    desc: 'Lightning-fast turnaround optimized for viral short-form social video at just $0.08 credits per second — the lowest cost in the marketplace.',
     visual: 'market',
   },
   {
-    meta: ['Data marketplaces', 'Machine-to-machine'],
-    title: 'Metered access to live data',
-    desc: 'Feed providers charge per row or per refresh, and agents settle automatically as they consume it.',
+    meta: ['Runway', 'Editing Suite'],
+    title: 'Runway: Generation with Built-in Directing',
+    desc: 'Pairs state-of-the-art diffusion generation with iterative camera controls and canvas editing tools for precise shot crafting.',
     visual: 'data',
   },
 ]
 
 export const manifesto =
-  "A payment isn't a transaction. It's trust. Made instant. Made small enough to happen a thousand times a second, so an agent can ask for exactly what it needs and pay for exactly what it used — nothing invoiced, nothing owed."
+  "Video generation shouldn't require five separate $30/month subscriptions. Pay once with Robinhood ETH, generate on any model per second of compute, and settle automatically before the render leaves the wire."
 
 export const capabilities = [
-  'Real-time settlement',
-  'Usage-based pricing',
-  'Programmable limits',
-  'Audit trail',
-  'Agent identity',
-  'Escrow & holds',
+  'Per-second output billing',
+  'Unified ETH credit balance',
+  'Zero monthly lock-in',
+  'Instant automatic refund on failure',
+  'Robinhood Chain settlement',
+  'Multi-provider routing',
 ]
 
 export const services = [
-  { num: '01', name: 'Real-time settlement', desc: 'No batching windows. Value moves the instant a call completes.' },
-  { num: '02', name: 'Usage-based pricing', desc: 'Price per call, per token, or per compute-second — set by the receiving agent.' },
-  { num: '03', name: 'Spending limits', desc: 'Cap what an agent can spend per hour, per counterparty, or per task.' },
-  { num: '04', name: 'Agent identity', desc: "Every call is signed and verifiable, so counterparties know exactly who they're paying." },
-  { num: '05', name: 'Escrow & holds', desc: 'Funds can be held pending task completion, then released automatically on success.' },
-  { num: '06', name: 'Full audit trail', desc: 'Every authorization and settlement is logged, signed, and queryable.' },
+  { num: '01', name: 'Per-second output billing', desc: 'Every model is billed strictly per second of rendered output. No rounding up to whole minutes, no wasted credits.' },
+  { num: '02', name: 'One unified balance', desc: 'Deposit once with Robinhood ETH. Credits are spendable across Google, Kling, MiniMax, and Runway.' },
+  { num: '03', name: 'Zero subscription traps', desc: 'Stop juggling multiple $30/month tier subscriptions. Keep ETH on Robinhood Chain and generate only when inspiration strikes.' },
+  { num: '04', name: 'Instant failure refunds', desc: 'If any upstream model fails, timeouts, or errors, your credits are refunded immediately to your on-chain ledger.' },
+  { num: '05', name: 'Native audio & 4K support', desc: 'Switch dynamically between budget tiers (Open-Sora at $0.03/s) and Hollywood-grade 4K audio (Veo 3.1 at $0.42/s).' },
+  { num: '06', name: 'Full on-chain audit trail', desc: 'Every generation job, model invocation, and micropayment is metered, verified, and queryable on Robinhood Chain.' },
 ]
 
 export const stats = [
-  { target: 180, label: 'Median settlement (ms)' },
-  { target: 99, label: 'Authorization uptime %' },
-  { target: 4200, label: 'Agents connected' },
-  { target: 40, label: 'Auth latency (ms)' },
+  { target: 5, label: 'Flagship Video Models' },
+  { target: 100, label: 'On-chain metered %' },
+  { target: 0, label: 'Monthly subscriptions needed' },
+  { target: 30, label: 'Avg render turnaround (s)' },
 ]
 
 export const marquee = [
-  'Orchestrator.ai',
-  'Signal Mesh',
-  'Fieldwork Agents',
-  'Loop Trading',
-  'Northbound Data',
-  'Sub-Agent Exchange',
+  'Google Veo 3.1',
+  'Kling 3.0 Pro',
+  'MiniMax Hailuo 2.3 Pro',
+  'Runway Gen',
+  'Open-Sora 2.0',
+  'Robinhood Chain',
+  'ETH Settlement Rail',
 ]

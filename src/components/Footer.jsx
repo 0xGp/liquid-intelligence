@@ -8,7 +8,7 @@ export default function Footer() {
           <img src="/assets/logo.png" alt="" />
           <strong>Vince</strong>
         </a>
-        <span>A payment rail for AI agents</span>
+        <span>Robinhood Video Generation Marketplace</span>
       </div>
       <div className="footer-col">
         {navLinks.map((link) => (
@@ -18,14 +18,14 @@ export default function Footer() {
         ))}
       </div>
       <div className="footer-col">
-        <a href="#" data-hover>
-          GitHub
+        <a href="#marketplace" data-hover>
+          Browse Models
         </a>
-        <a href="#" data-hover>
-          X
+        <a href="#api-market" data-hover>
+          API key market
         </a>
-        <a href="#" data-hover>
-          Status
+        <a href="#list-key" data-hover>
+          List a key
         </a>
       </div>
       <div className="footer-col">
@@ -34,8 +34,8 @@ export default function Footer() {
         </a>
       </div>
       <div className="footer-bottom">
-        <span>© 2026 Vince</span>
-        <span>Settled in real time.</span>
+        <span>© 2026 Vince · Built on Robinhood Chain</span>
+        <span>Every model, one balance. Billed per second.</span>
       </div>
     </footer>
   )

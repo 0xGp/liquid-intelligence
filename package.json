@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:ledger": "node scripts/deploy-credit-ledger.mjs",
+    "deploy:market": "node scripts/deploy-api-key-market.mjs"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",
