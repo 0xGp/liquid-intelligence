@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi'
 import { cn } from '@/lib/utils'
 import { primaryNav, isNavActive } from '../../navigation/config'
 import BrandLogo from '../brand/BrandLogo'
+import XLink from '../brand/XLink'
 import WalletButton from '../WalletButton'
 import CircleMenu from './CircleMenu'
 import WalletSheet from '../wallet/WalletSheet'
@@ -64,7 +65,8 @@ export default function AppNav() {
             })}
           </nav>
 
-          <div className="relative z-10 flex items-center justify-self-end gap-1">
+          <div className="relative z-10 flex items-center justify-self-end gap-0.5 sm:gap-1">
+            <XLink />
             <div className="hidden md:block">
               <WalletButton />
             </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 import BrandLogo from '../brand/BrandLogo'
+import XLink from '../brand/XLink'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -15,18 +16,6 @@ const LINKS = [
 
 const MARQUEE = Array.from({ length: 8 }, () => 'Liquid Intelligence')
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
-const X_URL = 'https://x.com/lintelligencerh'
-
-function XLogo({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      <path
-        fill="currentColor"
-        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"
-      />
-    </svg>
-  )
-}
 
 export default function LandingFooter() {
   return (
@@ -111,18 +100,10 @@ export default function LandingFooter() {
           <div className="flex flex-col gap-3 border-t border-white/50 px-6 py-4 text-[12px] text-foreground/45 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
             <span>© 2026 Liquid Intelligence. Built on Robinhood Chain.</span>
             <div className="flex items-center gap-3">
-              <a
-                href={X_URL}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="Liquid Intelligence on X"
-                className="inline-flex size-8 items-center justify-center rounded-full border border-foreground/10 bg-white/55 text-foreground transition-colors duration-200 hover:border-foreground/20 hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"
-              >
-                <XLogo className="size-3.5" />
-              </a>
-              <a href="mailto:hello@relay-pay.dev" className="hover:text-foreground/70">
-                hello@relay-pay.dev
-              </a>
+              <XLink
+                className="size-8 border border-foreground/10 bg-white/55 hover:border-foreground/20 hover:bg-white"
+                markClassName="size-4"
+              />
             </div>
           </div>
         </div>
