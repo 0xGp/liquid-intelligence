@@ -7,6 +7,7 @@ import ConfigPanel from '../components/ConfigPanel'
 import TextChatPanel from '../components/TextChatPanel'
 import VideoResultModal from '../components/VideoResultModal'
 import MarketplaceFooter from '../components/MarketplaceFooter'
+import MarketplaceBanner from '../components/marketplace/MarketplaceBanner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -84,17 +85,19 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-[#F0F1F4]">
-      <div className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-8 sm:px-8 lg:px-14 xl:px-20">
+      <div className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-24 sm:px-8 lg:px-14 xl:px-20">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="mb-10 size-10 rounded-full bg-card"
+          className="mb-8 size-10 rounded-full bg-card"
           onClick={goBack}
           aria-label="Back to home"
         >
           <ArrowLeft size={18} strokeWidth={1.75} aria-hidden />
         </Button>
+
+        <MarketplaceBanner />
 
         {activeRental && (
           <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -212,7 +215,9 @@ export default function MarketplacePage() {
           </div>
         </header>
 
-        <MarketplaceGrid />
+        <div id="marketplace-catalog">
+          <MarketplaceGrid />
+        </div>
         <MarketplaceFooter />
       </div>
 
