@@ -1,6 +1,4 @@
 import React, { useState, useId, useRef, useEffect } from 'react'
-import { useAccount } from 'wagmi'
-import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { AlertTriangle, Code2, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMarketplace } from '../context/MarketplaceContext'
@@ -27,6 +25,7 @@ import {
 } from '../data/opperCodeSnippets'
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import { vaultProxy } from '../web3/vaultProxy'
+import { useActiveAccount } from '../chain/useActiveAccount'
 
 const studioChip =
   'inline-flex h-8 max-w-full items-center truncate rounded-full border border-border bg-background px-3 text-[12px] font-medium text-foreground hover:bg-secondary'
@@ -65,8 +64,8 @@ export default function ConfigPanel() {
   const rental = usingRental ? rentalForListing(activeRental.listingId) : null
   const rentalBalance = rental?.creditsRemaining ?? 0
 
-  const { isConnected } = useAccount()
-  const { openConnectModal } = useConnectModal()
+  const { isConnected, connect, copy: chainCopy } = useActiveAccount()
+  const asset = chainCopy.asset
 
   const promptId = useId()
   const durationId = useId()
@@ -1080,7 +1079,7 @@ export default function ConfigPanel() {
 
   const handleGenerate = async () => {
     if (!isConnected) {
-      openConnectModal?.()
+      connect()
       return
     }
     if (!usingRental && !ledgerConfigured) {
@@ -1659,7 +1658,7 @@ export default function ConfigPanel() {
                   className="font-semibold underline underline-offset-2"
                   onClick={(e) => openDepositFrom(e.currentTarget)}
                 >
-                  Deposit ETH
+                  Deposit {asset}
                 </button>
               </span>
             </div>

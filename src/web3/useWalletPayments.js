@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
 import { formatEther } from 'viem'
 import { DEPOSIT_CHAIN, CREDITS_PER_ETH } from './tokens'
 import { creditLedgerAddress, creditLedgerAbi, microToCredits } from './creditLedger'
@@ -23,7 +25,11 @@ function dayKey(ts) {
 }
 
 export function useWalletPayments() {
-  const { address, isConnected } = useAccount()
+  const { isNear } = useChain()
+  const near = useNearWallet()
+  const ethAccount = useAccount()
+  const address = isNear ? near.accountId : ethAccount.address
+  const isConnected = isNear ? near.isConnected : ethAccount.isConnected
   const publicClient = usePublicClient({ chainId: DEPOSIT_CHAIN.id })
   const { listings, rentals, usage, claims, myClaimable } = useApiKeyMarket()
   const [localTick, setLocalTick] = useState(0)
@@ -88,7 +94,7 @@ export function useWalletPayments() {
   }, [address, listings, rentals, usage, claims])
 
   const refreshChain = useCallback(async () => {
-    if (!address || !publicClient) {
+    if (isNear || !address || !publicClient) {
       setChainRows([])
       return
     }
@@ -266,7 +272,7 @@ export function useWalletPayments() {
     } finally {
       setSyncing(false)
     }
-  }, [address, publicClient])
+  }, [address, isNear, publicClient])
 
   useEffect(() => {
     refreshChain()

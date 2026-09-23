@@ -4,6 +4,8 @@ import XLink from '../brand/XLink'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useChain } from '../../chain/ChainContext'
+import { SHOW_ROBINHOOD, withoutRobinhood } from '../../chain/visibility'
 
 const LINKS = [
   { label: 'Marketplace', href: '#marketplace' },
@@ -18,6 +20,7 @@ const MARQUEE = Array.from({ length: 8 }, () => 'Liquid Intelligence')
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
 
 export default function LandingFooter() {
+  const { copy } = useChain()
   return (
     <footer
       className="landing-panel landing-footer relative z-10 flex min-h-[100svh] items-center bg-transparent py-20 text-foreground sm:py-24"
@@ -27,7 +30,7 @@ export default function LandingFooter() {
         <div className="landing-glass-card overflow-hidden p-0">
           <div className="flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-9">
             <h2 className="max-w-[16ch] text-[clamp(2rem,4.6vw,3.25rem)] leading-[1.08] text-foreground">
-              Generate and rent on Robinhood.
+              {copy.footerTitle}
             </h2>
             <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               <Button
@@ -48,6 +51,7 @@ export default function LandingFooter() {
                   />
                 </span>
               </Button>
+              {SHOW_ROBINHOOD ? (
               <Button
                 type="button"
                 variant="outline"
@@ -59,6 +63,7 @@ export default function LandingFooter() {
               >
                 List a key
               </Button>
+              ) : null}
             </div>
           </div>
 
@@ -76,11 +81,11 @@ export default function LandingFooter() {
             <div>
               <BrandLogo nameClassName="text-[18px] sm:text-[20px]" />
               <p className="mt-3 max-w-[34ch] text-[13px] leading-relaxed text-foreground/60">
-                AI infrastructure marketplace with on-chain credits on Robinhood Chain.
+                {copy.footerBody}
               </p>
             </div>
             <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2.5">
-              {LINKS.map((link) => (
+              {withoutRobinhood(LINKS).map((link) => (
                 <a
                   key={link.href + link.label}
                   href={link.href}
@@ -98,7 +103,7 @@ export default function LandingFooter() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-white/50 px-6 py-4 text-[12px] text-foreground/45 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
-            <span>© 2026 Liquid Intelligence. Built on Robinhood Chain.</span>
+            <span>{copy.footerMeta}</span>
             <div className="flex items-center gap-3">
               <XLink
                 className="size-8 border border-foreground/10 bg-white/55 hover:border-foreground/20 hover:bg-white"

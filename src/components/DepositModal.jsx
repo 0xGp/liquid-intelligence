@@ -13,6 +13,9 @@ import {
   ethToCredits,
 } from '../web3/tokens'
 import { explorerTx, shortId } from '../web3/agents'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
+import { CREDITS_PER_NEAR, MIN_DEPOSIT_NEAR, nearExplorerTx, nearToYocto } from '../near/rpc'
 
 const PRESETS = [0.001, 0.005, 0.01, 0.05]
 
@@ -34,10 +37,17 @@ export default function DepositModal() {
     refreshBalance,
     balance,
   } = useMarketplace()
-  const { address, isConnected } = useAccount()
+  const { address: ethAddress, isConnected: ethConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
+  const { isNear, copy } = useChain()
+  const near = useNearWallet()
+  const isConnected = isNear ? near.isConnected : ethConnected
+  const address = isNear ? near.accountId : ethAddress
+  const asset = copy.asset
+  const rate = isNear ? CREDITS_PER_NEAR : CREDITS_PER_ETH
+  const minDeposit = isNear ? MIN_DEPOSIT_NEAR : MIN_DEPOSIT_ETH
 
-  const [amount, setAmount] = useState(String(MIN_DEPOSIT_ETH))
+  const [amount, setAmount] = useState(String(minDeposit))
   const [copied, setCopied] = useState(false)
   const [status, setStatus] = useState('')
   const [txHash, setTxHash] = useState(null)
@@ -45,22 +55,23 @@ export default function DepositModal() {
 
   const creditsPreview = ethToCredits(parseFloat(amount) || 0)
   const num = parseFloat(amount)
-  const amountValid = !Number.isNaN(num) && num >= MIN_DEPOSIT_ETH
+  const amountValid = !Number.isNaN(num) && num >= minDeposit
 
   const { data: ethBalance, refetch: refetchBalance } = useBalance({
-    address,
+    address: ethAddress,
     chainId: DEPOSIT_CHAIN.id,
-    query: { enabled: Boolean(address) },
+    query: { enabled: Boolean(ethAddress) && !isNear },
   })
 
   const walletBalance = useMemo(() => {
+    if (isNear) return near.nativeBalance
     if (!ethBalance?.value) return null
     try {
       return Number(formatEther(ethBalance.value))
     } catch {
       return null
     }
-  }, [ethBalance])
+  }, [ethBalance, isNear, near.nativeBalance])
 
   const close = () => {
     setDepositModalOpen(false)
@@ -80,24 +91,31 @@ export default function DepositModal() {
     setError('')
     setStatus('')
     if (!isConnected || !address) {
-      setError('Connect Robinhood Wallet first.')
+      setError(isNear ? 'Connect a NEAR wallet first.' : 'Connect Robinhood Wallet first.')
       return
     }
     if (!ledgerConfigured || !ledgerAddress) {
-      setError('Credit ledger not configured. Deploy and set VITE_CREDIT_LEDGER_ADDRESS.')
+      setError(`Credit ledger not configured. Deploy and set ${copy.ledgerEnv}.`)
       return
     }
     if (!amountValid) {
-      setError(`Enter at least ${MIN_DEPOSIT_ETH} ETH.`)
+      setError(`Enter at least ${minDeposit} ${asset}.`)
       return
     }
 
     setIsDepositPending(true)
     try {
-      const valueWei = ethBalance?.value
-      if (valueWei != null) {
+      if (isNear) {
+        if (near.nativeYocto != null && BigInt(near.nativeYocto) < nearToYocto(num)) {
+          throw new Error(
+            `Not enough NEAR in this wallet. Balance: ${
+              walletBalance != null ? walletBalance.toFixed(6) : '—'
+            } NEAR`,
+          )
+        }
+      } else if (ethBalance?.value != null) {
         const need = BigInt(Math.round(num * 1e18))
-        if (valueWei < need) {
+        if (ethBalance.value < need) {
           throw new Error(
             `Not enough ETH in this wallet. Balance: ${
               walletBalance != null ? walletBalance.toFixed(6) : '—'
@@ -106,13 +124,14 @@ export default function DepositModal() {
         }
       }
 
-      setStatus(`Confirm ${num} ETH in your wallet…`)
+      setStatus(`Confirm ${num} ${asset} in your wallet…`)
       const result = await depositEth(num)
       setTxHash(result.hash)
-      await refetchBalance?.()
+      if (isNear) await near.refreshNative?.()
+      else await refetchBalance?.()
       await refreshBalance?.()
       setStatus(
-        `Deposited ${num} ETH. +${result.credits.toFixed(2)} credits (${CREDITS_PER_ETH.toLocaleString()} / ETH).`,
+        `Deposited ${num} ${asset}. +${result.credits.toFixed(2)} credits (${rate.toLocaleString()} / ${asset}).`,
       )
     } catch (err) {
       setError(err?.shortMessage || err?.message || 'Deposit failed.')
@@ -122,7 +141,7 @@ export default function DepositModal() {
     }
   }
 
-  const txUrl = txHash ? explorerTx(DEPOSIT_CHAIN, txHash) : null
+  const txUrl = txHash ? (isNear ? nearExplorerTx(txHash) : explorerTx(DEPOSIT_CHAIN, txHash)) : null
   const done = Boolean(txHash)
 
   return (
@@ -130,17 +149,17 @@ export default function DepositModal() {
       open={depositModalOpen}
       onClose={close}
       origin={depositOrigin}
-      label="Deposit ETH"
+      label={copy.deposit}
       center
     >
       <header className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="font-serif text-[1.375rem] leading-tight text-foreground">
-              Deposit ETH
+              {copy.deposit}
             </h2>
             <p className="mt-1 truncate text-[13px] text-muted-foreground">
-              Robinhood Chain · {CREDITS_PER_ETH.toLocaleString()} credits / ETH
+              {copy.network} · {rate.toLocaleString()} credits / {asset}
             </p>
           </div>
           <button
@@ -184,14 +203,14 @@ export default function DepositModal() {
                   <input
                     id="deposit-eth-amount"
                     type="number"
-                    min={MIN_DEPOSIT_ETH}
+                    min={minDeposit}
                     step="0.001"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="min-w-0 flex-1 bg-transparent font-serif text-[1.75rem] leading-none text-foreground outline-none placeholder:text-muted-foreground/50"
-                    placeholder={String(MIN_DEPOSIT_ETH)}
+                    placeholder={String(minDeposit)}
                   />
-                  <span className="text-[13px] font-medium text-muted-foreground">ETH</span>
+                  <span className="text-[13px] font-medium text-muted-foreground">{asset}</span>
                 </div>
                 <p className="text-[13px] text-muted-foreground">
                   ≈{' '}
@@ -199,7 +218,7 @@ export default function DepositModal() {
                     {creditsPreview.toFixed(2)}
                   </strong>{' '}
                   credits
-                  {amountValid ? '' : ` · min ${MIN_DEPOSIT_ETH} ETH`}
+                  {amountValid ? '' : ` · min ${minDeposit} ${asset}`}
                 </p>
               </div>
 
@@ -211,7 +230,7 @@ export default function DepositModal() {
                     className={cn(chip, amount === String(val) && chipOn)}
                     onClick={() => setAmount(String(val))}
                   >
-                    {val} ETH
+                    {val} {asset}
                   </button>
                 ))}
               </div>
@@ -219,7 +238,7 @@ export default function DepositModal() {
               {isConnected && (
                 <p className="text-[12px] leading-relaxed text-muted-foreground">
                   From {shortId(address)}
-                  {walletBalance != null ? ` · ${walletBalance.toFixed(6)} ETH` : ''}
+                  {walletBalance != null ? ` · ${walletBalance.toFixed(6)} ${asset}` : ''}
                   {` · ${balance.toFixed(2)} credits`}
                 </p>
               )}
@@ -244,7 +263,7 @@ export default function DepositModal() {
                 <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
                   <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
-                    Ledger not deployed. Set <code className="font-medium">VITE_CREDIT_LEDGER_ADDRESS</code>.
+                    Ledger not deployed. Set <code className="font-medium">{copy.ledgerEnv}</code>.
                   </span>
                 </div>
               )}
@@ -276,9 +295,9 @@ export default function DepositModal() {
           <button
             type="button"
             className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92"
-            onClick={() => openConnectModal?.()}
+            onClick={() => (isNear ? near.connect() : openConnectModal?.())}
           >
-            Connect Wallet to Deposit
+            {copy.connect}
           </button>
         ) : (
           <button
@@ -290,12 +309,12 @@ export default function DepositModal() {
             onClick={runDeposit}
           >
             {isDepositPending && <Loader2 size={16} strokeWidth={2} className="animate-spin" aria-hidden />}
-            {isDepositPending ? 'Confirming…' : `Deposit ${amount || 0} ETH`}
+            {isDepositPending ? 'Confirming…' : `Deposit ${amount || 0} ${asset}`}
           </button>
         )}
         {!done && (
           <p className="text-center text-[12px] text-muted-foreground">
-            Min {MIN_DEPOSIT_ETH} ETH · credits mint to this wallet
+            Min {minDeposit} {asset} · credits mint to this wallet
           </p>
         )}
       </div>

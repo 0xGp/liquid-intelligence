@@ -3,14 +3,17 @@ import { X } from 'lucide-react'
 import BrandLogo from '../brand/BrandLogo'
 import { cn } from '@/lib/utils'
 import { primaryNav } from '../../navigation/config'
+import { withoutRobinhood } from '../../chain/visibility'
+import { useChain } from '../../chain/ChainContext'
 
-const MENU_LINKS = [
+const MENU_LINKS = withoutRobinhood([
   ...primaryNav,
   { label: 'How it works', href: '#about' },
   { label: 'Earnings', href: '#earnings' },
-]
+])
 
 export default function CircleMenu({ open, onClose, onWallet, isConnected }) {
+  const { copy } = useChain()
   useEffect(() => {
     if (!open) return undefined
     const prev = document.body.style.overflow
@@ -80,7 +83,7 @@ export default function CircleMenu({ open, onClose, onWallet, isConnected }) {
           }}
           tabIndex={open ? 0 : -1}
         >
-          {isConnected ? 'Wallet' : 'Connect Robinhood'}
+          {isConnected ? 'Wallet' : copy.connect}
         </button>
       </div>
     </div>

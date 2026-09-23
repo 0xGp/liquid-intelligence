@@ -1,9 +1,11 @@
 import React from 'react'
 import { Coins, Layers, ShieldCheck } from 'lucide-react'
 import { useMarketplace } from '../context/MarketplaceContext'
+import { useChain } from '../chain/ChainContext'
 
 export default function MarketplaceFooter() {
   const { marketplaceTab } = useMarketplace()
+  const { copy } = useChain()
   const isText = marketplaceTab === 'text'
 
   const cards = [
@@ -21,8 +23,8 @@ export default function MarketplaceFooter() {
     },
     {
       icon: ShieldCheck,
-      title: 'Robinhood ETH settlement',
-      body: 'Deposits settle in native ETH on Robinhood Chain. Verifiable, fast, non-custodial.',
+      title: copy.settlementTitle,
+      body: copy.settlementBody,
     },
   ]
 

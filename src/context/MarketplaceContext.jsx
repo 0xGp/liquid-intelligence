@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import modelsData from '../data/models.json'
 import textModelsData from '../data/textModels.json'
-import { useCreditLedger } from '../web3/CreditLedgerContext'
+import { useStudioLedger } from '../chain/useStudioLedger'
 
 const MarketplaceContext = createContext(null)
 
@@ -14,7 +14,7 @@ export function MarketplaceProvider({ children }) {
     spendCredits,
     refreshBalance,
     ledgerAddress,
-  } = useCreditLedger()
+  } = useStudioLedger()
 
   const [models] = useState(modelsData)
   const [textModels] = useState(textModelsData)

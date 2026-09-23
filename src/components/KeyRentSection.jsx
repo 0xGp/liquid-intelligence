@@ -1,6 +1,8 @@
 import React from 'react'
+import { useChain } from '../chain/ChainContext'
 
 export default function KeyRentSection() {
+  const { copy } = useChain()
   return (
     <section className="key-rent-section" id="key-rent">
       <div className="key-rent-inner">
@@ -11,8 +13,8 @@ export default function KeyRentSection() {
             Earn when others call it.
           </h2>
           <p>
-            Publish OpenAI, Gemini, Kling, or Opper keys. Renters deposit Robinhood ETH to the
-            Vince treasury. Every metered call burns credits — your share settles back as payment
+            Publish OpenAI, Gemini, Kling, or Opper keys. Renters deposit {copy.asset} to the
+            treasury. Every metered call burns credits — your share settles back as payment
             for the key, minus a clear platform fee.
           </p>
           <div className="key-rent-actions">
@@ -32,11 +34,11 @@ export default function KeyRentSection() {
           </li>
           <li>
             <strong>Rent</strong>
-            <span>Users deposit ETH to treasury for credits on your key.</span>
+            <span>Users deposit {copy.asset} to treasury for credits on your key.</span>
           </li>
           <li>
             <strong>Meter</strong>
-            <span>Each call deducts credits and accrues your ETH share.</span>
+            <span>Each call deducts credits and accrues your {copy.asset} share.</span>
           </li>
           <li>
             <strong>Claim</strong>

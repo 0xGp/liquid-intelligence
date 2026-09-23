@@ -4,6 +4,7 @@ node_modules/
 dist/
 .env
 .env.local
+target/
 vault-keys.env.snippet
 artifacts/*.bin
 artifacts/*.abi

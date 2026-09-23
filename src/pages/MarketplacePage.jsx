@@ -15,6 +15,8 @@ import { useMarketplace } from '../context/MarketplaceContext'
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import { shortId } from '../web3/agents'
 import { DEPOSIT_CHAIN } from '../web3/tokens'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
 
 const TABS = [
   { id: 'video', label: 'Video', icon: Video },
@@ -22,9 +24,13 @@ const TABS = [
 ]
 
 export default function MarketplacePage() {
-  const { isConnected, address } = useAccount()
+  const { isConnected: ethConnected, address: ethAddress } = useAccount()
   const chainId = useChainId()
   const { openConnectModal } = useConnectModal()
+  const { isNear, copy } = useChain()
+  const near = useNearWallet()
+  const isConnected = isNear ? near.isConnected : ethConnected
+  const address = isNear ? near.accountId : ethAddress
   const {
     balance,
     openDepositFrom,
@@ -71,10 +77,11 @@ export default function MarketplacePage() {
     window.scrollTo({ top: 0 })
   }
 
-  const onDepositChain = chainId === DEPOSIT_CHAIN.id
+  const onDepositChain = isNear || chainId === DEPOSIT_CHAIN.id
   const openDeposit = (el) => {
     if (!isConnected) {
-      openConnectModal?.()
+      if (isNear) near.connect()
+      else openConnectModal?.()
       return
     }
     openDepositFrom(el)
@@ -135,7 +142,7 @@ export default function MarketplacePage() {
               <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground sm:text-[17px]">
                 {activeRental
                   ? `Using vault-proxied ${activeRental.provider} key — billed from rental credits.`
-                  : 'Create with AI models. Every call is metered in credits and settled on Robinhood Chain.'}
+                  : copy.studio}
               </p>
             </div>
 
@@ -156,7 +163,7 @@ export default function MarketplacePage() {
                         : 'border-amber-300 bg-amber-50 text-amber-700',
                     )}
                   >
-                    {onDepositChain ? 'Robinhood Chain' : 'Switch to Robinhood'}
+                    {onDepositChain ? copy.network : copy.wrongNetwork}
                   </span>
                   <span className="inline-flex h-10 items-center rounded-full bg-foreground px-4 text-[12px] font-semibold text-background">
                     {balance.toFixed(2)} credits
@@ -168,7 +175,7 @@ export default function MarketplacePage() {
                     onClick={(e) => openDeposit(e.currentTarget)}
                   >
                     <Plus size={15} strokeWidth={2} aria-hidden />
-                    Deposit ETH
+                    {copy.deposit}
                   </Button>
                 </>
               ) : (
@@ -176,10 +183,10 @@ export default function MarketplacePage() {
                   type="button"
                   variant="outline"
                   className="h-11 rounded-full border-border bg-card px-6"
-                  onClick={openConnectModal}
+                  onClick={() => (isNear ? near.connect() : openConnectModal?.())}
                 >
                   <Wallet size={15} strokeWidth={2} aria-hidden />
-                  Connect Robinhood
+                  {copy.connect}
                 </Button>
               )}
             </div>

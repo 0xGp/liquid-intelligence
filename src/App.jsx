@@ -13,6 +13,10 @@ import PaymentsPage from './pages/PaymentsPage'
 import { MarketplaceProvider } from './context/MarketplaceContext'
 import { ApiKeyMarketProvider } from './web3/ApiKeyMarketContext'
 import { CreditLedgerProvider } from './web3/CreditLedgerContext'
+import { NearLedgerProvider } from './near/NearLedgerContext'
+import { useChain } from './chain/ChainContext'
+import { SHOW_ROBINHOOD } from './chain/visibility'
+import { useNearWallet } from './near/NearWalletContext'
 import { useMotion } from './hooks/useMotion'
 import Rail from './components/Rail'
 
@@ -31,7 +35,10 @@ function useHash() {
 function AppInner() {
   useMotion()
   const hash = useHash()
-  const { isConnected } = useAccount()
+  const { isNear } = useChain()
+  const { isConnected: ethConnected } = useAccount()
+  const { isConnected: nearConnected } = useNearWallet()
+  const isConnected = isNear ? nearConnected : ethConnected
   const prevConnected = React.useRef(isConnected)
 
   useEffect(() => {
@@ -51,11 +58,11 @@ function AppInner() {
   
 
   let page = <LandingPage />
-  if (onRail) page = <Rail />
+  if (SHOW_ROBINHOOD && onRail) page = <Rail />
   else if (onMarketplace) page = <MarketplacePage />
-  else if (onApiMarket) page = <ApiMarketPage />
-  else if (onListKey) page = <ListKeyPage />
-  else if (onEarnings) page = <EarningsPage />
+  else if (SHOW_ROBINHOOD && onApiMarket) page = <ApiMarketPage />
+  else if (SHOW_ROBINHOOD && onListKey) page = <ListKeyPage />
+  else if (SHOW_ROBINHOOD && onEarnings) page = <EarningsPage />
  
 
   return (
@@ -74,11 +81,13 @@ function AppInner() {
 export default function App() {
   return (
     <CreditLedgerProvider>
+      <NearLedgerProvider>
       <MarketplaceProvider>
         <ApiKeyMarketProvider>
           <AppInner />
         </ApiKeyMarketProvider>
       </MarketplaceProvider>
+      </NearLedgerProvider>
     </CreditLedgerProvider>
   )
 }

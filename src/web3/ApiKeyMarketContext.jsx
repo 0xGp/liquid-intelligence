@@ -16,6 +16,7 @@ import {
 import { waitForTransactionReceipt } from 'wagmi/actions'
 import { keccak256, stringToHex } from 'viem'
 import { wagmiConfig } from './config'
+import { useChain } from '../chain/ChainContext'
 import { DEPOSIT_CHAIN, depositDestination } from './tokens'
 import {
   ensureSeedListings,
@@ -116,6 +117,7 @@ function upsertOnChainRental(rentals, { listingId, renter, creditsRemaining }) {
 }
 
 export function ApiKeyMarketProvider({ children }) {
+  const { isNear } = useChain()
   const { address, isConnected, chainId } = useAccount()
   const { switchChainAsync } = useSwitchChain()
   const { sendTransactionAsync } = useSendTransaction()
@@ -291,6 +293,11 @@ export function ApiKeyMarketProvider({ children }) {
     }
   }
 
+  const blockNearMarket = () => {
+    if (!isNear) return
+    throw new Error('Key listings, rents, and claims stay on Robinhood. Switch the chain tab to ETH.')
+  }
+
   const createListing = async ({
     provider,
     kind,
@@ -301,6 +308,7 @@ export function ApiKeyMarketProvider({ children }) {
   }) => {
     setLastError(null)
     setLastTx(null)
+    blockNearMarket()
     if (!isConnected || !address) {
       throw new Error('Connect Robinhood Wallet to list a key.')
     }
@@ -394,6 +402,7 @@ export function ApiKeyMarketProvider({ children }) {
   }
 
   const pauseListing = async (listingId) => {
+    blockNearMarket()
     const listing = listings.find((l) => l.id === listingId)
     if (onChainEnabled && listing?.onChain) {
       await ensureChain()
@@ -423,6 +432,7 @@ export function ApiKeyMarketProvider({ children }) {
     setBusy(true)
     setLastTx(null)
     try {
+      blockNearMarket()
       if (!isConnected || !address) throw new Error('Connect wallet to rent.')
       const listing = listings.find((l) => l.id === listingId || l.onChainId === listingId)
       if (!listing || listing.status !== 'active') {
@@ -765,6 +775,7 @@ export function ApiKeyMarketProvider({ children }) {
    */
   const openStudio = async (listingId) => {
     setLastError(null)
+    blockNearMarket()
     if (!address) throw new Error('Connect wallet.')
     const listing = listings.find((l) => l.id === listingId || l.onChainId === listingId)
     if (!listing) throw new Error('Listing not found.')
@@ -858,6 +869,7 @@ export function ApiKeyMarketProvider({ children }) {
     setBusy(true)
     setLastTx(null)
     try {
+      blockNearMarket()
       if (!address) throw new Error('Connect wallet.')
       const listing = listings.find((l) => l.id === listingId || l.onChainId === listingId)
       await ensureChain()
@@ -963,7 +975,7 @@ export function ApiKeyMarketProvider({ children }) {
     onChainEnabled,
     marketAddress: market,
     vaultReady,
-    activeRental,
+    activeRental: isNear ? null : activeRental,
     createListing,
     pauseListing,
     rentListing,

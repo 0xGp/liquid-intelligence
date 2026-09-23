@@ -1,6 +1,4 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
-import { useAccount } from 'wagmi'
-import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { AlertTriangle, Eraser, SendHorizontal, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useMarketplace } from '../context/MarketplaceContext'
@@ -11,6 +9,7 @@ import {
   chatPathForProvider,
   defaultChatModelForProvider,
 } from '../web3/vaultProxy'
+import { useActiveAccount } from '../chain/useActiveAccount'
 
 /**
  * Text chat via Opper Conversations (OpenAI-compatible gateway),
@@ -32,8 +31,7 @@ export default function TextChatPanel() {
   } = useMarketplace()
   const { activeRental, meterCreditsOnly, rentalForListing } = useApiKeyMarket()
 
-  const { isConnected } = useAccount()
-  const { openConnectModal } = useConnectModal()
+  const { isConnected, connect, copy } = useActiveAccount()
   const inputId = useId()
   const scrollRef = useRef(null)
   const [draft, setDraft] = useState('')
@@ -140,7 +138,7 @@ export default function TextChatPanel() {
 
     if (usingRental) {
       if (!isConnected) {
-        openConnectModal?.()
+        connect()
         return
       }
       if (hasInsufficientBalance) {
@@ -304,7 +302,7 @@ export default function TextChatPanel() {
                     className="font-semibold underline underline-offset-2"
                     onClick={(e) => openDepositFrom(e.currentTarget)}
                   >
-                    Deposit ETH
+                    {copy.deposit}
                   </button>
                 )}
               </span>

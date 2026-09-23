@@ -1,5 +1,7 @@
 import React from 'react'
 import { ArrowUpRight, Clapperboard, KeyRound, MessageSquareText, WalletCards } from 'lucide-react'
+import { useChain } from '../../chain/ChainContext'
+import { withoutRobinhood } from '../../chain/visibility'
 
 const PRODUCTS = [
   {
@@ -34,8 +36,14 @@ const PRODUCTS = [
 ]
 
 export default function LandingProducts() {
-  const featured = PRODUCTS.find((p) => p.featured)
-  const rest = PRODUCTS.filter((p) => !p.featured)
+  const { copy } = useChain()
+  const products = withoutRobinhood(PRODUCTS).map((product) => {
+    if (product.title === 'API key market') return { ...product, description: copy.keys }
+    if (product.title === 'Payments & earnings') return { ...product, description: copy.payments }
+    return product
+  })
+  const featured = products.find((p) => p.featured)
+  const rest = products.filter((p) => !p.featured)
 
   return (
     <section className="landing-panel flex min-h-[100svh] items-center bg-transparent" data-enter>

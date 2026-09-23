@@ -6,6 +6,8 @@ import { explorerTx, shortId } from '../web3/agents'
 import { DEPOSIT_CHAIN } from '../web3/tokens'
 import { PAYMENT_KINDS } from '../web3/paymentLedger'
 import { useWalletPayments } from '../web3/useWalletPayments'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -27,6 +29,8 @@ function matchesFilter(row, filter) {
 
 export default function PaymentsPage() {
   const { openConnectModal } = useConnectModal()
+  const { copy, isNear } = useChain()
+  const near = useNearWallet()
   const { openDepositFrom, ledgerConfigured } = useMarketplace()
   const { address, isConnected, rows, analytics, syncing, syncError, refreshChain } =
     useWalletPayments()
@@ -50,8 +54,7 @@ export default function PaymentsPage() {
         <div className="ak-bar-title">
           <h1>Payments</h1>
           <p>
-            Every deposit, spend, key rent, and claim from this wallet on Robinhood Chain. Syncs
-            on-chain events with local studio activity.
+            {copy.paymentsLead}
           </p>
         </div>
         <div className="ak-bar-actions">
@@ -63,7 +66,7 @@ export default function PaymentsPage() {
             className="ak-solid-btn"
             onClick={(e) => openDepositFrom(e.currentTarget)}
           >
-            Deposit ETH
+            {copy.deposit}
           </button>
         </div>
       </header>
@@ -71,8 +74,8 @@ export default function PaymentsPage() {
       <div className="ak-flow">
         {!isConnected ? (
           <div className="ak-connect-card">
-            <p>Connect Robinhood Wallet to open your payment ledger and analytics.</p>
-            <button type="button" className="ak-solid-btn" onClick={() => openConnectModal?.()}>
+            <p>{copy.paymentsConnect}</p>
+            <button type="button" className="ak-solid-btn" onClick={() => (isNear ? near.connect() : openConnectModal?.())}>
               Connect wallet
             </button>
           </div>
@@ -81,11 +84,11 @@ export default function PaymentsPage() {
             <div className="pay-statement">
               <div>
                 <p className="ak-earn-label">Paid out</p>
-                <p className="ak-earn-value">{formatEthShort(analytics.paidEth)} ETH</p>
+                <p className="ak-earn-value">{formatEthShort(analytics.paidEth)} {copy.asset}</p>
               </div>
               <div>
                 <p className="ak-earn-label">Deposited</p>
-                <p className="ak-earn-sub">{formatEthShort(analytics.depositEth)} ETH</p>
+                <p className="ak-earn-sub">{formatEthShort(analytics.depositEth)} {copy.asset}</p>
               </div>
               <div>
                 <p className="ak-earn-label">Credits spent</p>
@@ -94,7 +97,7 @@ export default function PaymentsPage() {
               <div>
                 <p className="ak-earn-label">Claimed / claimable</p>
                 <p className="ak-earn-sub">
-                  {formatEthShort(analytics.earnedEth)} / {formatEthShort(analytics.claimable)} ETH
+                  {formatEthShort(analytics.earnedEth)} / {formatEthShort(analytics.claimable)} {copy.asset}
                 </p>
               </div>
             </div>
@@ -119,9 +122,9 @@ export default function PaymentsPage() {
             <section className="ak-section">
               <h2>Volume, last 14 days</h2>
               {analytics.maxDay <= 0 ? (
-                <p className="ak-empty-sm">No outbound ETH in this window.</p>
+                <p className="ak-empty-sm">No outbound {copy.asset} in this window.</p>
               ) : (
-                <div className="pay-volume" role="img" aria-label="ETH paid over the last 14 days">
+                <div className="pay-volume" role="img" aria-label={`${copy.asset} paid over the last 14 days`}>
                   {analytics.days.map((day) => {
                     return (
                       <div key={day.key} className="pay-volume-col">
@@ -131,7 +134,7 @@ export default function PaymentsPage() {
                             style={{
                               '--fill': analytics.maxDay > 0 ? day.eth / analytics.maxDay : 0,
                             }}
-                            title={`${day.label}: ${formatEthShort(day.eth)} ETH · ${day.count} payments`}
+                            title={`${day.label}: ${formatEthShort(day.eth)} ${copy.asset} · ${day.count} payments`}
                           />
                         </div>
                         <span>{day.label.replace(/^[A-Za-z]+ /, '')}</span>
@@ -150,7 +153,7 @@ export default function PaymentsPage() {
                     <tr>
                       <th>Type</th>
                       <th>Count</th>
-                      <th>ETH</th>
+                      <th>{copy.asset}</th>
                       <th>Credits</th>
                     </tr>
                   </thead>
@@ -196,7 +199,7 @@ export default function PaymentsPage() {
                 <p className="ak-empty-sm">
                   No payments in this view yet.{' '}
                   <button type="button" className="pay-inline-link" onClick={(e) => openDepositFrom(e.currentTarget)}>
-                    Deposit ETH
+                    {copy.deposit}
                   </button>{' '}
                   or <a href="#api-market">rent a key</a>.
                 </p>
@@ -208,7 +211,7 @@ export default function PaymentsPage() {
                         <th>When</th>
                         <th>Type</th>
                         <th>Detail</th>
-                        <th>ETH</th>
+                        <th>{copy.asset}</th>
                         <th>Credits</th>
                         <th>Tx</th>
                       </tr>

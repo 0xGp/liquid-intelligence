@@ -10,10 +10,15 @@ import {
 } from '../web3/apiKeyMarket'
 import { shortId } from '../web3/agents'
 import EmptyState from '../components/ui/EmptyState'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
 
 export default function ApiMarketPage() {
-  const { isConnected } = useAccount()
+  const { isConnected: ethConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
+  const { copy, isNear } = useChain()
+  const near = useNearWallet()
+  const isConnected = isNear ? near.isConnected : ethConnected
   const {
     listings,
     rentListing,
@@ -55,11 +60,12 @@ export default function ApiMarketPage() {
     setStatus('')
     setActiveId(listing.id)
     if (!isConnected) {
-      openConnectModal?.()
+      if (isNear) near.connect()
+      else openConnectModal?.()
       return
     }
     try {
-      setStatus(`Depositing ${rentAmount} ETH to treasury for ${listing.title}…`)
+      setStatus(`Depositing ${rentAmount} ${copy.asset} to treasury for ${listing.title}…`)
       const rental = await rentListing(listing.id, rentAmount)
       setStatus(
         `Rented. +${formatCredits(rental.creditsTotal)} credits on this key. Tx ${shortId(rental.txHash)}`
@@ -74,7 +80,8 @@ export default function ApiMarketPage() {
     setStatus('')
     setActiveId(listing.id)
     if (!isConnected) {
-      openConnectModal?.()
+      if (isNear) near.connect()
+      else openConnectModal?.()
       return
     }
     try {
@@ -98,7 +105,7 @@ export default function ApiMarketPage() {
       <header className="ak-bar">
         <div className="ak-bar-title">
           <h1>API Keys</h1>
-          <p>Find API access for AI workloads. Rent with ETH — pay only for what you use.</p>
+          <p>{copy.apiMarket}</p>
         </div>
         <div className="ak-bar-actions">
           

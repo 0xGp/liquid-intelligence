@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/card'
 import EmptyState from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
+import { useChain } from '../chain/ChainContext'
 
 const STEPS = [
   { id: 'details', label: 'Details' },
@@ -62,6 +63,7 @@ const fieldClass =
 
 export default function ListKeyPage() {
   const { isConnected, address } = useAccount()
+  const { copy } = useChain()
   const { openConnectModal } = useConnectModal()
   const { createListing, myListings, pauseListing, platformFeeBps, onChainEnabled, vaultReady, marketAddress } =
     useApiKeyMarket()
@@ -295,7 +297,7 @@ export default function ListKeyPage() {
                   <div>
                     <CardTitle className="text-[22px]">Pricing</CardTitle>
                     <CardDescription className="mt-2">
-                      Set the credit cost per metered call. Renters deposit ETH; credits burn per call.
+                      {copy.listPrice}
                     </CardDescription>
                   </div>
                   <label className="block">
@@ -411,7 +413,7 @@ export default function ListKeyPage() {
                   ) : null}
                   {done ? (
                     <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-800">
-                      Listed <strong>{done.title}</strong>. Renters can deposit ETH on the market page.
+                      Listed <strong>{done.title}</strong>. {copy.listDone}
                     </p>
                   ) : null}
                 </div>

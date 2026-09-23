@@ -2,46 +2,52 @@ import React, { useEffect, useState } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useChain } from '../../chain/ChainContext'
+import { withoutRobinhood } from '../../chain/visibility'
 
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
 
 const SLIDES = [
   {
     title: 'List your API key',
-    body: 'Publish a key for others to rent. Metered calls pay you on Robinhood Chain — secrets stay vault-encrypted.',
+    bodyKey: 'bannerList',
     cta: 'List a key',
     href: '#list-key',
   },
   {
     title: 'Rent listed keys',
-    body: 'Unlock vault-proxied API access with ETH. Pay per call, not a subscription.',
+    bodyKey: 'bannerRent',
     cta: 'Browse keys',
     href: '#api-market',
   },
   {
     title: 'Generate in the studio',
-    body: 'Video models and text LLMs share one credit pool. Every call is metered and settled in ETH.',
+    bodyKey: 'bannerStudio',
     cta: 'See models',
     href: '#marketplace-catalog',
   },
 ]
 
 export default function MarketplaceBanner() {
+  const { copy } = useChain()
+  const slides = withoutRobinhood(SLIDES)
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
-  const slide = SLIDES[index]
+  const safeIndex = index % slides.length
+  const current = slides[safeIndex]
+  const slide = { ...current, body: copy[current.bodyKey] }
 
   useEffect(() => {
     if (paused) return undefined
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
     const id = window.setInterval(() => {
-      setIndex((current) => (current + 1) % SLIDES.length)
+      setIndex((current) => (current + 1) % slides.length)
     }, 6500)
     return () => window.clearInterval(id)
-  }, [paused])
+  }, [paused, slides.length])
 
   const go = (next) => {
-    setIndex((next + SLIDES.length) % SLIDES.length)
+    setIndex((next + slides.length) % slides.length)
   }
 
   const onCta = () => {
@@ -101,9 +107,10 @@ export default function MarketplaceBanner() {
             </span>
           </Button>
 
+          {slides.length > 1 ? (
           <div className="flex items-center justify-between gap-4 sm:justify-end">
             <div className="flex items-center">
-              {SLIDES.map((item, i) => (
+              {slides.map((item, i) => (
                 <button
                   key={item.title}
                   type="button"
@@ -127,7 +134,7 @@ export default function MarketplaceBanner() {
                 type="button"
                 aria-label="Previous slide"
                 className="inline-flex size-9 items-center justify-center rounded-full border border-background/15 bg-background/10 text-background transition-colors hover:bg-background/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50"
-                onClick={() => go(index - 1)}
+                onClick={() => go(safeIndex - 1)}
               >
                 <ChevronLeft size={16} strokeWidth={2} aria-hidden />
               </button>
@@ -135,12 +142,13 @@ export default function MarketplaceBanner() {
                 type="button"
                 aria-label="Next slide"
                 className="inline-flex size-9 items-center justify-center rounded-full border border-background/15 bg-background/10 text-background transition-colors hover:bg-background/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background/50"
-                onClick={() => go(index + 1)}
+                onClick={() => go(safeIndex + 1)}
               >
                 <ChevronRight size={16} strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>
+          ) : null}
         </div>
       </div>
     </section>

@@ -4,10 +4,15 @@ import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { useApiKeyMarket } from '../web3/ApiKeyMarketContext'
 import { formatCredits, formatEthShort } from '../web3/apiKeyMarket'
 import { shortId } from '../web3/agents'
+import { useChain } from '../chain/ChainContext'
+import { useNearWallet } from '../near/NearWalletContext'
 
 export default function EarningsPage() {
-  const { isConnected } = useAccount()
+  const { isConnected: ethConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
+  const { copy, isNear } = useChain()
+  const near = useNearWallet()
+  const isConnected = isNear ? near.isConnected : ethConnected
   const {
     myClaimable,
     myListings,
@@ -41,7 +46,7 @@ export default function EarningsPage() {
       setStatus('Confirm claim settlement in wallet…')
       const claim = await claimEarnings(listingId)
       setStatus(
-        `Claimed ${formatEthShort(claim.ethAmount)} ETH · tx ${shortId(claim.txHash)}`
+        `Claimed ${formatEthShort(claim.ethAmount)} ${copy.asset} · tx ${shortId(claim.txHash)}`
       )
     } catch {
       setStatus('')
@@ -57,8 +62,9 @@ export default function EarningsPage() {
         <div className="ak-bar-title">
           <h1>Key earnings</h1>
           <p>
-            Usage fees from rented keys. Platform keeps {platformFeeBps / 100}%; claim the rest to
-            your wallet ledger on Robinhood Chain.
+            {isNear
+              ? copy.earningsLead
+              : `Usage fees from rented keys. Platform keeps ${platformFeeBps / 100}%; claim the rest to your wallet on Robinhood Chain.`}
           </p>
         </div>
         <div className="ak-bar-actions">
@@ -77,8 +83,8 @@ export default function EarningsPage() {
       <div className="ak-flow">
         {!isConnected ? (
           <div className="ak-connect-card">
-            <p>Connect Robinhood Wallet to see listings you own and claimable fees.</p>
-            <button type="button" className="ak-solid-btn" onClick={() => openConnectModal?.()}>
+            <p>{copy.earningsConnect}</p>
+            <button type="button" className="ak-solid-btn" onClick={() => (isNear ? near.connect() : openConnectModal?.())}>
               Connect wallet
             </button>
           </div>
@@ -91,12 +97,12 @@ export default function EarningsPage() {
                   {formatEthShort(
                     myClaimable.rows.reduce((s, r) => s + (r.listerEth || 0), 0)
                   )}{' '}
-                  ETH
+                  {copy.asset}
                 </p>
               </div>
               <div>
                 <p className="ak-earn-label">Claimable</p>
-                <p className="ak-earn-value">{formatEthShort(myClaimable.total)} ETH</p>
+                <p className="ak-earn-value">{formatEthShort(myClaimable.total)} {copy.asset}</p>
               </div>
               <div>
                 <p className="ak-earn-label">Usage</p>
@@ -147,10 +153,10 @@ export default function EarningsPage() {
                           </td>
                           <td>{row.calls}</td>
                           <td>{formatCredits(row.credits)}</td>
-                          <td>{formatEthShort(row.listerEth)} ETH</td>
-                          <td>{formatEthShort(row.claimedEth)} ETH</td>
+                          <td>{formatEthShort(row.listerEth)} {copy.asset}</td>
+                          <td>{formatEthShort(row.claimedEth)} {copy.asset}</td>
                           <td>
-                            <strong>{formatEthShort(row.claimable)} ETH</strong>
+                            <strong>{formatEthShort(row.claimable)} {copy.asset}</strong>
                           </td>
                           <td>
                             <button
@@ -184,7 +190,7 @@ export default function EarningsPage() {
                         <strong>{r.listingId}</strong>
                         <span>
                           {formatCredits(r.creditsRemaining)} / {formatCredits(r.creditsTotal)}{' '}
-                          credits · deposited {formatEthShort(r.ethDeposited)} ETH
+                          credits · deposited {formatEthShort(r.ethDeposited)} {copy.asset}
                         </span>
                       </div>
                       <a className="ak-ghost-btn" href="#api-market">
@@ -208,7 +214,7 @@ export default function EarningsPage() {
                     .map((c) => (
                       <li key={c.id}>
                         <div>
-                          <strong>{formatEthShort(c.ethAmount)} ETH</strong>
+                          <strong>{formatEthShort(c.ethAmount)} {copy.asset}</strong>
                           <span>
                             {new Date(c.createdAt).toLocaleString()} · {shortId(c.txHash)}
                           </span>

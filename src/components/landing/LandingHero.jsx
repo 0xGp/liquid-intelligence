@@ -2,14 +2,19 @@ import React from 'react'
 import { ArrowRight } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
+import { useChain } from '../../chain/ChainContext'
+import { useNearWallet } from '../../near/NearWalletContext'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
 
 export default function LandingHero() {
-  const { isConnected } = useAccount()
+  const { isConnected: ethConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
+  const { isNear, copy } = useChain()
+  const near = useNearWallet()
+  const isConnected = isNear ? near.isConnected : ethConnected
 
   const goMarketplace = () => {
     window.location.hash = '#marketplace'
@@ -22,8 +27,7 @@ export default function LandingHero() {
           AI infrastructure marketplace
         </h1>
         <p className="mx-auto mt-6 max-w-[52ch] text-[15px] leading-relaxed text-foreground/70 sm:text-lg">
-          Generate AI. Rent API access. Pay only for what you use — settled in ETH on Robinhood
-          mainnet.
+          {copy.hero}
         </p>
 
         <div className="mt-10 flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
@@ -49,9 +53,9 @@ export default function LandingHero() {
               variant="outline"
               size="lg"
               className="rounded-full border-border bg-white/50 px-6 backdrop-blur-md"
-              onClick={() => openConnectModal?.()}
+              onClick={() => (isNear ? near.connect() : openConnectModal?.())}
             >
-              Connect Robinhood
+              {copy.connect}
             </Button>
           ) : (
             <Button

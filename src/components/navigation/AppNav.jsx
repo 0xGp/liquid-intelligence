@@ -3,17 +3,24 @@ import { Menu } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import { cn } from '@/lib/utils'
 import { primaryNav, isNavActive } from '../../navigation/config'
+import { withoutRobinhood } from '../../chain/visibility'
 import BrandLogo from '../brand/BrandLogo'
 import XLink from '../brand/XLink'
 import WalletButton from '../WalletButton'
 import CircleMenu from './CircleMenu'
 import WalletSheet from '../wallet/WalletSheet'
+import ChainTab from '../../chain/ChainTab'
+import { useChain } from '../../chain/ChainContext'
+import { useNearWallet } from '../../near/NearWalletContext'
 
 export default function AppNav() {
   const [hash, setHash] = useState(() => window.location.hash || '#')
   const [menuOpen, setMenuOpen] = useState(false)
   const [walletOpen, setWalletOpen] = useState(false)
-  const { isConnected } = useAccount()
+  const { isConnected: ethConnected } = useAccount()
+  const { isNear } = useChain()
+  const { isConnected: nearConnected } = useNearWallet()
+  const isConnected = isNear ? nearConnected : ethConnected
 
   useEffect(() => {
     const onHash = () => {
@@ -27,9 +34,7 @@ export default function AppNav() {
 
   const onLanding = !hash || hash === '#' || hash === '#work' || hash === '#about'
 
-  const links = [
-    ...primaryNav,
-  ]
+  const links = withoutRobinhood(primaryNav)
 
   return (
     <>
@@ -66,6 +71,7 @@ export default function AppNav() {
           </nav>
 
           <div className="relative z-10 flex items-center justify-self-end gap-0.5 sm:gap-1">
+            <ChainTab />
             <XLink />
             <div className="hidden md:block">
               <WalletButton />
