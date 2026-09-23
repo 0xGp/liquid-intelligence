@@ -28,7 +28,7 @@ export default function ChainTab() {
             aria-selected={active}
             className={cn(
               'h-8 rounded-full px-2.5 text-[11px] font-semibold tracking-wide transition-colors sm:px-3 sm:text-[12px]',
-              active ? 'bg-foreground text-background' : 'text-foreground/60 hover:text-foreground',
+              active ? 'bg-primary text-primary-foreground' : 'text-foreground/60 hover:text-foreground',
             )}
             onClick={() => setChain(option.id)}
           >

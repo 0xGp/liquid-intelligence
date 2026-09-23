@@ -7,7 +7,10 @@ export const NEAR_RPC =
 
 const YOCTO = 10n ** 24n
 export const CREDITS_PER_NEAR = 5000
+/** Credited portion, after a new account has paid for its own storage. */
 export const MIN_DEPOSIT_NEAR = 0.001
+/** Minimum to attach so a 64-character account can pay storage and still credit 0.001 NEAR. */
+export const MIN_ATTACHED_NEAR = 0.003
 export const NEAR_GAS = '30000000000000'
 
 export function nearToYocto(amount) {

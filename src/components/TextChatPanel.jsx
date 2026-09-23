@@ -261,9 +261,9 @@ export default function TextChatPanel() {
               className={cn(
                 'max-w-[92%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed',
                 msg.role === 'user'
-                  ? 'ml-auto bg-foreground text-background'
+                  ? 'ml-auto bg-accent text-accent-foreground'
                   : msg.role === 'system'
-                    ? 'border border-amber-200 bg-amber-50 text-amber-900'
+                    ? 'border border-warning/30 bg-warning-soft text-warning-ink'
                     : 'border border-border bg-background text-foreground',
               )}
             >
@@ -292,7 +292,7 @@ export default function TextChatPanel() {
           )}
 
           {error && (
-            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
+            <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
               <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
               <span>
                 {error}{' '}
@@ -349,7 +349,7 @@ export default function TextChatPanel() {
           <button
             type="button"
             className={cn(
-              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92 disabled:opacity-40',
+              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92 disabled:opacity-40',
               usingRental &&
                 hasInsufficientBalance &&
                 isConnected &&

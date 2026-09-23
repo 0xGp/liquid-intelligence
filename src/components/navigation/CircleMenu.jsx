@@ -47,7 +47,7 @@ export default function CircleMenu({ open, onClose, onWallet, isConnected }) {
           <BrandLogo onClick={onClose} />
           <button
             type="button"
-            className="inline-flex size-10 items-center justify-center rounded-full bg-foreground text-background"
+            className="inline-flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"
             onClick={onClose}
             aria-label="Close menu"
             tabIndex={open ? 0 : -1}
@@ -76,7 +76,7 @@ export default function CircleMenu({ open, onClose, onWallet, isConnected }) {
 
         <button
           type="button"
-          className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background"
+          className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground"
           onClick={() => {
             onClose?.()
             onWallet?.()

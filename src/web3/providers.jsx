@@ -8,7 +8,7 @@ import '@rainbow-me/rainbowkit/styles.css'
 const queryClient = new QueryClient()
 
 const theme = lightTheme({
-  accentColor: '#111318',
+  accentColor: '#a5ce1f',
   accentColorForeground: '#ffffff',
   borderRadius: 'medium',
   fontStack: 'system',

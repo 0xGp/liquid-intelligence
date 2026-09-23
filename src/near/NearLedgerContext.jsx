@@ -4,7 +4,7 @@ import { recordPayment } from '../web3/paymentLedger'
 import { useNearWallet } from './NearWalletContext'
 import {
   CREDITS_PER_NEAR,
-  MIN_DEPOSIT_NEAR,
+  MIN_ATTACHED_NEAR,
   NEAR_CONTRACT_ID,
   nearToYocto,
   viewFunction,
@@ -50,18 +50,20 @@ export function NearLedgerProvider({ children }) {
       if (!configured) throw new Error('Set VITE_NEAR_CONTRACT_ID.')
       if (!isConnected || !accountId) throw new Error('Connect a NEAR wallet first.')
       const num = Number(amount)
-      if (!Number.isFinite(num) || num < MIN_DEPOSIT_NEAR) {
-        throw new Error(`Enter at least ${MIN_DEPOSIT_NEAR} NEAR.`)
+      if (!Number.isFinite(num) || num < MIN_ATTACHED_NEAR) {
+        throw new Error(`Enter at least ${MIN_ATTACHED_NEAR} NEAR.`)
       }
       setPending(true)
       try {
+        const beforeMicro = BigInt(await viewFunction('balance_of', { account: accountId }))
         const hash = await signAndSend({
           methodName: 'deposit',
           args: {},
           deposit: nearToYocto(num).toString(),
         })
+        const afterMicro = BigInt(await viewFunction('balance_of', { account: accountId }))
         const next = await refreshBalance()
-        const credits = +(num * CREDITS_PER_NEAR).toFixed(2)
+        const credits = +microToCredits(afterMicro - beforeMicro).toFixed(6)
         recordPayment({
           id: `pay_dep_${hash || Date.now()}`,
           wallet: accountId,
@@ -88,6 +90,46 @@ export function NearLedgerProvider({ children }) {
     },
     [accountId, configured, isConnected, refreshBalance, signAndSend],
   )
+
+  const redeemCredits = useCallback(async () => {
+    setLastError(null)
+    if (!configured) throw new Error('Set VITE_NEAR_CONTRACT_ID.')
+    if (!isConnected || !accountId) throw new Error('Connect a NEAR wallet first.')
+    setPending(true)
+    try {
+      const micro = BigInt(await viewFunction('balance_of', { account: accountId }))
+      if (micro <= 0n) throw new Error('No credits to return.')
+      const hash = await signAndSend({
+        methodName: 'redeem',
+        args: {},
+        deposit: '0',
+      })
+      const next = await refreshBalance()
+      const credits = +microToCredits(micro).toFixed(6)
+      recordPayment({
+        id: `pay_rdm_${hash || Date.now()}`,
+        wallet: accountId,
+        kind: 'ledger_redeem',
+        eth: credits / CREDITS_PER_NEAR,
+        credits,
+        txHash: hash,
+        createdAt: Date.now(),
+        title: 'Studio credit return',
+      })
+      return { hash, credits, balance: next }
+    } catch (err) {
+      if (isRejection(err)) {
+        const cancelled = new Error('Cancelled in wallet. Credits were not returned.')
+        setLastError(cancelled.message)
+        throw cancelled
+      }
+      const message = err?.message || 'Return failed.'
+      setLastError(message)
+      throw err
+    } finally {
+      setPending(false)
+    }
+  }, [accountId, configured, isConnected, refreshBalance, signAndSend])
 
   const spendCredits = useCallback(
     async (credits) => {
@@ -151,10 +193,11 @@ export function NearLedgerProvider({ children }) {
       isSyncing: pending,
       lastError,
       depositEth,
+      redeemCredits,
       spendCredits,
       refreshBalance,
     }),
-    [balance, configured, depositEth, lastError, pending, refreshBalance, spendCredits],
+    [balance, configured, depositEth, lastError, pending, redeemCredits, refreshBalance, spendCredits],
   )
 
   return <NearLedgerContext.Provider value={value}>{children}</NearLedgerContext.Provider>

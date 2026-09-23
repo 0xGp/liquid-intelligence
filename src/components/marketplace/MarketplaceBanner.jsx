@@ -63,7 +63,7 @@ export default function MarketplaceBanner() {
 
   return (
     <section
-      className="relative mb-10 overflow-hidden rounded-3xl bg-foreground text-background shadow-[0_12px_32px_rgba(17,19,24,0.12)]"
+      className="relative mb-10 overflow-hidden rounded-3xl bg-panel text-panel-foreground shadow-[0_12px_32px_rgba(22,26,18,0.16)]"
       aria-roledescription="carousel"
       aria-label="Marketplace promotions"
       onMouseEnter={() => setPaused(true)}
@@ -84,7 +84,7 @@ export default function MarketplaceBanner() {
           <h2 className="font-serif text-[clamp(2rem,4.8vw,3.35rem)] leading-[1.06] tracking-[-0.02em]">
             {slide.title}
           </h2>
-          <p className="mt-4 max-w-[40ch] text-[15px] leading-relaxed text-background/70 sm:text-[16px]">
+          <p className="mt-4 max-w-[40ch] text-[15px] leading-relaxed text-panel-foreground/70 sm:text-[16px]">
             {slide.body}
           </p>
         </div>
@@ -93,7 +93,7 @@ export default function MarketplaceBanner() {
           <Button
             type="button"
             size="lg"
-            className="group h-auto w-fit justify-between rounded-full bg-background py-2.5 ps-6 pe-2 text-[14px] text-foreground hover:bg-background"
+            className="group h-auto w-fit justify-between rounded-full bg-primary py-2.5 ps-6 pe-2 text-[14px] text-primary-foreground hover:bg-[#96be1c]"
             onClick={onCta}
           >
             {slide.cta}

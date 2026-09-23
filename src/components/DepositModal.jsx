@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useAccount, useBalance } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { formatEther } from 'viem'
@@ -15,14 +15,16 @@ import {
 import { explorerTx, shortId } from '../web3/agents'
 import { useChain } from '../chain/ChainContext'
 import { useNearWallet } from '../near/NearWalletContext'
-import { CREDITS_PER_NEAR, MIN_DEPOSIT_NEAR, nearExplorerTx, nearToYocto } from '../near/rpc'
+import { CREDITS_PER_NEAR, MIN_ATTACHED_NEAR, nearExplorerTx, nearToYocto } from '../near/rpc'
+import { useNearLedger } from '../near/NearLedgerContext'
 
 const PRESETS = [0.001, 0.005, 0.01, 0.05]
+const NEAR_PRESETS = [0.003, 0.01, 0.05, 0.1]
 
 const chip =
   'inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[12px] font-medium text-foreground hover:bg-secondary'
 const chipOn =
-  'border-foreground bg-foreground text-background hover:bg-foreground hover:text-background'
+  'border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
 
 export default function DepositModal() {
   const {
@@ -41,19 +43,28 @@ export default function DepositModal() {
   const { openConnectModal } = useConnectModal()
   const { isNear, copy } = useChain()
   const near = useNearWallet()
+  const nearLedger = useNearLedger()
   const isConnected = isNear ? near.isConnected : ethConnected
   const address = isNear ? near.accountId : ethAddress
   const asset = copy.asset
   const rate = isNear ? CREDITS_PER_NEAR : CREDITS_PER_ETH
-  const minDeposit = isNear ? MIN_DEPOSIT_NEAR : MIN_DEPOSIT_ETH
+  const minDeposit = isNear ? MIN_ATTACHED_NEAR : MIN_DEPOSIT_ETH
+  const presets = isNear ? NEAR_PRESETS : PRESETS
 
-  const [amount, setAmount] = useState(String(minDeposit))
+  const [amount, setAmount] = useState(() => String(isNear ? MIN_ATTACHED_NEAR : MIN_DEPOSIT_ETH))
   const [copied, setCopied] = useState(false)
   const [status, setStatus] = useState('')
   const [txHash, setTxHash] = useState(null)
+  const [headline, setHeadline] = useState('')
   const [error, setError] = useState('')
 
-  const creditsPreview = ethToCredits(parseFloat(amount) || 0)
+  useEffect(() => {
+    setAmount(String(minDeposit))
+  }, [minDeposit])
+
+  const creditsPreview = isNear
+    ? Math.max(0, (parseFloat(amount) || 0) - 0.0015) * CREDITS_PER_NEAR
+    : ethToCredits(parseFloat(amount) || 0)
   const num = parseFloat(amount)
   const amountValid = !Number.isNaN(num) && num >= minDeposit
 
@@ -126,6 +137,7 @@ export default function DepositModal() {
 
       setStatus(`Confirm ${num} ${asset} in your wallet…`)
       const result = await depositEth(num)
+      setHeadline(`+${Number(result.credits).toFixed(2)} credits`)
       setTxHash(result.hash)
       if (isNear) await near.refreshNative?.()
       else await refetchBalance?.()
@@ -178,7 +190,7 @@ export default function DepositModal() {
           {done ? (
             <div className="flex flex-col gap-3">
               <p className="font-serif text-[1.75rem] leading-tight text-foreground">
-                +{ethToCredits(num).toFixed(2)} credits
+                {headline}
               </p>
               <p className="text-[13px] leading-relaxed text-muted-foreground">{status}</p>
               {txUrl && (
@@ -219,11 +231,12 @@ export default function DepositModal() {
                   </strong>{' '}
                   credits
                   {amountValid ? '' : ` · min ${minDeposit} ${asset}`}
+                  {isNear ? ' · a new account keeps a little NEAR for storage' : ''}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {PRESETS.map((val) => (
+                {presets.map((val) => (
                   <button
                     key={val}
                     type="button"
@@ -260,7 +273,7 @@ export default function DepositModal() {
               )}
 
               {!ledgerConfigured && (
-                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
+                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
                   <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
                     Ledger not deployed. Set <code className="font-medium">{copy.ledgerEnv}</code>.
@@ -272,7 +285,7 @@ export default function DepositModal() {
                 <p className="text-[13px] leading-relaxed text-muted-foreground">{status}</p>
               )}
               {error && (
-                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-900">
+                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
                   <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
                   <span>{error}</span>
                 </div>
@@ -286,7 +299,7 @@ export default function DepositModal() {
         {done ? (
           <button
             type="button"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92"
             onClick={close}
           >
             Done
@@ -294,23 +307,51 @@ export default function DepositModal() {
         ) : !isConnected ? (
           <button
             type="button"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92"
             onClick={() => (isNear ? near.connect() : openConnectModal?.())}
           >
             {copy.connect}
           </button>
         ) : (
-          <button
-            type="button"
-            className={cn(
-              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92 disabled:opacity-40',
+          <>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92 disabled:opacity-40',
+              )}
+              disabled={isDepositPending || !ledgerConfigured || !amountValid}
+              onClick={runDeposit}
+            >
+              {isDepositPending && <Loader2 size={16} strokeWidth={2} className="animate-spin" aria-hidden />}
+              {isDepositPending ? 'Confirming…' : `Deposit ${amount || 0} ${asset}`}
+            </button>
+            {isNear && balance > 0 && (
+              <button
+                type="button"
+                className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border bg-background text-[13px] font-semibold text-foreground disabled:opacity-40"
+                disabled={isDepositPending || !ledgerConfigured}
+                onClick={async () => {
+                  setError('')
+                  setStatus('Confirm the return in your wallet…')
+                  setIsDepositPending(true)
+                  try {
+                    const result = await nearLedger.redeemCredits()
+                    setHeadline(`Returned ${result.credits.toFixed(2)} credits`)
+                    setStatus(`Returned ${result.credits.toFixed(2)} credits as NEAR.`)
+                    setTxHash(result.hash)
+                    await near.refreshNative?.()
+                  } catch (err) {
+                    setError(err?.message || 'Return failed.')
+                    setStatus('')
+                  } finally {
+                    setIsDepositPending(false)
+                  }
+                }}
+              >
+                Return unused credits as NEAR
+              </button>
             )}
-            disabled={isDepositPending || !ledgerConfigured || !amountValid}
-            onClick={runDeposit}
-          >
-            {isDepositPending && <Loader2 size={16} strokeWidth={2} className="animate-spin" aria-hidden />}
-            {isDepositPending ? 'Confirming…' : `Deposit ${amount || 0} ${asset}`}
-          </button>
+          </>
         )}
         {!done && (
           <p className="text-center text-[12px] text-muted-foreground">

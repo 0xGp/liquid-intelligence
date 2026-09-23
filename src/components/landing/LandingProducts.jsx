@@ -75,7 +75,7 @@ function ProductCard({ item, featured = false }) {
       }
     >
       <div className={featured ? 'max-w-xl' : ''}>
-        <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-foreground text-background">
+        <span className="inline-flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <Icon size={26} strokeWidth={1.55} aria-hidden />
         </span>
         <h3 className={`mt-5 font-semibold text-foreground ${featured ? 'text-[22px] sm:text-[26px]' : 'text-[17px] sm:text-lg'}`}>

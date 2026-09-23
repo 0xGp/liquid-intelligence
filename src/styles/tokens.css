@@ -7,19 +7,20 @@
   --pr-font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
 
   /* Semantic tokens */
-  --pr-bg: #f7f8fa;
+  --pr-bg: #f4f6ef;
   --pr-surface: #ffffff;
   --pr-elevated: #ffffff;
   --pr-text: #111318;
-  --pr-text-secondary: #6b7280;
-  --pr-text-muted: #9ca3af;
-  --pr-border: #e7e9ed;
-  --pr-brand: #111318;
-  --pr-accent: #5b5ce2;
-  --pr-accent-soft: rgba(91, 92, 226, 0.1);
-  --pr-success: #059669;
-  --pr-warning: #d97706;
-  --pr-danger: #dc2626;
+  --pr-text-secondary: #5c6156;
+  --pr-text-muted: #7a8172;
+  --pr-border: #dde3d2;
+  --pr-brand: #a5ce1f;
+  --pr-accent: #4d6b0c;
+  --pr-accent-soft: #e7f3c4;
+  --pr-panel: #161a12;
+  --pr-success: #2f6b3a;
+  --pr-warning: #c4841d;
+  --pr-danger: #c2412d;
 
   /* Radius */
   --pr-radius-xs: 6px;
@@ -41,11 +42,11 @@
   --pr-pad: 56px;
 
   /* Legacy aliases remapped to light theme */
-  --black: #f7f8fa;
+  --black: #f4f6ef;
   --white: #111318;
-  --gray: #6b7280;
-  --line: #e7e9ed;
-  --line-dark: #e7e9ed;
+  --gray: #5c6156;
+  --line: #dde3d2;
+  --line-dark: #dde3d2;
 }
 
 @media (max-width: 767px) {
