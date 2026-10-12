@@ -64,7 +64,7 @@ export default function EarningsPage() {
           <p>
             {isNear
               ? copy.earningsLead
-              : `Usage fees from rented keys. Platform keeps ${platformFeeBps / 100}%; claim the rest to your wallet on Robinhood Chain.`}
+              : `Usage fees from rented keys. Platform keeps ${platformFeeBps / 100}%; claim the rest to your wallet on Ethereum.`}
           </p>
         </div>
         <div className="ak-bar-actions">

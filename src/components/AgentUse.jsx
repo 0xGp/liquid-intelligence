@@ -10,7 +10,7 @@ export default function AgentUse({ session, provider, onAsk, busy }) {
         <div>
           <h2>{provider.name} is live</h2>
           <p>
-            Paid on Robinhood Chain. {session.remaining} {provider.unit}
+            Paid on Ethereum. {session.remaining} {provider.unit}
             {session.remaining === 1 ? '' : 's'} left on this hold.
           </p>
         </div>

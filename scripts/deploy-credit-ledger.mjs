@@ -1,23 +1,23 @@
 /**
- * Compile + deploy CreditLedger to Robinhood Chain.
+ * Compile + deploy CreditLedger (Ethereum mainnet by default).
  *
  * Usage:
  *   DEPLOYER_PRIVATE_KEY=0x... node scripts/deploy-credit-ledger.mjs
  *
  * Network:
- *   DEPLOY_NETWORK=mainnet|testnet  (defaults to VITE_DEPOSIT_NETWORK, then mainnet)
+ *   DEPLOY_NETWORK=ethereum|robinhood|robinhood-testnet  (defaults to ethereum)
  *
  * Optional:
  *   TREASURY_ADDRESS=0x...   (defaults to VITE_VINCE_TREASURY, then deployer)
  *
- * Writes address to stdout and artifacts/credit-ledger-deployment.json
+ * Writes address to stdout and artifacts/credit-ledger-<network>.json
  */
 import { createWalletClient, createPublicClient, http, getAddress, isAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { loadEnvFile, resolveNetwork, root } from './robinhood-networks.mjs'
+import { loadEnvFile, resolveNetwork, root } from './networks.mjs'
 
 loadEnvFile()
 
@@ -104,7 +104,7 @@ const out = {
   deployedAt: new Date().toISOString(),
 }
 
-writeFileSync(join(artifactsDir, 'credit-ledger-deployment.json'), JSON.stringify(out, null, 2))
+writeFileSync(join(artifactsDir, `credit-ledger-${chain.slug}.json`), JSON.stringify(out, null, 2))
 
 console.log('\nDeployed CreditLedger')
 console.log(`Address: ${address}`)

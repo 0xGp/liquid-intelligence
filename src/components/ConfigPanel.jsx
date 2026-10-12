@@ -30,7 +30,7 @@ import { useActiveAccount } from '../chain/useActiveAccount'
 const studioChip =
   'inline-flex h-8 max-w-full items-center truncate rounded-full border border-border bg-background px-3 text-[12px] font-medium text-foreground hover:bg-secondary'
 const studioChipOn =
-  'border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+  'border-foreground bg-foreground text-background hover:bg-foreground hover:text-background'
 
 export default function ConfigPanel() {
   const {
@@ -1240,7 +1240,7 @@ export default function ConfigPanel() {
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-6">
         {prompt.trim() && jobState === 'in_progress' && (
-          <p className="rounded-2xl bg-accent px-4 py-3 text-[13px] leading-relaxed text-accent-foreground">
+          <p className="rounded-2xl bg-foreground px-4 py-3 text-[13px] leading-relaxed text-background">
             {prompt}
           </p>
         )}
@@ -1279,7 +1279,7 @@ export default function ConfigPanel() {
 
             <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-border">
               <div
-                className="h-full rounded-full bg-primary transition-[width] duration-300"
+                className="h-full rounded-full bg-foreground transition-[width] duration-300"
                 style={{ width: `${jobProgress}%` }}
               />
             </div>
@@ -1289,7 +1289,7 @@ export default function ConfigPanel() {
             </div>
 
             {(isKling || isOmni || isSora || isOpper) && apiLogs.length > 0 && (
-              <div className="mt-3 overflow-hidden rounded-xl bg-panel px-3 py-2.5 font-mono text-[11px] leading-relaxed text-panel-foreground">
+              <div className="mt-3 overflow-hidden rounded-xl bg-foreground px-3 py-2.5 font-mono text-[11px] leading-relaxed text-background">
                 <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wide text-background/60">
                   <span>Live log</span>
                   <span>Live</span>
@@ -1305,7 +1305,7 @@ export default function ConfigPanel() {
         )}
 
         {jobState === 'failed' && (
-          <div className="rounded-2xl border border-warning/30 bg-warning-soft px-4 py-4 text-warning-ink">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
             <div className="flex items-start gap-2.5">
               <AlertTriangle size={16} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
               <div className="min-w-0 flex-1">
@@ -1315,7 +1315,7 @@ export default function ConfigPanel() {
             </div>
 
             {rawApiResponse && (
-              <pre className="mt-3 max-h-40 overflow-auto rounded-xl bg-white/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-warning-ink">
+              <pre className="mt-3 max-h-40 overflow-auto rounded-xl bg-white/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-amber-950">
                 {JSON.stringify(rawApiResponse, null, 2)}
               </pre>
             )}
@@ -1323,7 +1323,7 @@ export default function ConfigPanel() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                className="inline-flex h-9 items-center rounded-full border border-warning/40 bg-white px-3.5 text-[12px] font-medium text-warning-ink"
+                className="inline-flex h-9 items-center rounded-full border border-amber-300 bg-white px-3.5 text-[12px] font-medium text-amber-950"
                 onClick={
                   isKling && rawApiResponse?.code === 402
                     ? executeKlingApi
@@ -1340,7 +1340,7 @@ export default function ConfigPanel() {
               </button>
               <button
                 type="button"
-                className="inline-flex h-9 items-center rounded-full border border-warning/40 bg-white px-3.5 text-[12px] font-medium text-warning-ink"
+                className="inline-flex h-9 items-center rounded-full border border-amber-300 bg-white px-3.5 text-[12px] font-medium text-amber-950"
                 onClick={handleProceedWithSampleVideo}
               >
                 Preview sample
@@ -1649,7 +1649,7 @@ export default function ConfigPanel() {
           </div>
 
           {hasInsufficientBalance && isConnected && (
-            <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
               <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
               <span>
                 You need {shortfall.toFixed(2)} more credits for this job.{' '}
@@ -1667,7 +1667,7 @@ export default function ConfigPanel() {
           <button
             type="button"
             className={cn(
-              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92',
+              'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92',
               hasInsufficientBalance && isConnected && 'bg-muted text-muted-foreground hover:opacity-100',
             )}
             onClick={() => {

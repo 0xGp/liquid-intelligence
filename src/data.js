@@ -34,24 +34,24 @@ export const projects = [
 ]
 
 export const manifesto =
-  "Video generation shouldn't require five separate $30/month subscriptions. Pay once with Robinhood ETH, generate on any model per second of compute, and settle automatically before the render leaves the wire."
+  "Video generation shouldn't require five separate $30/month subscriptions. Pay once with ETH, generate on any model per second of compute, and settle automatically before the render leaves the wire."
 
 export const capabilities = [
   'Per-second output billing',
   'Unified ETH credit balance',
   'Zero monthly lock-in',
   'Instant automatic refund on failure',
-  'Robinhood Chain settlement',
+  'Ethereum settlement',
   'Multi-provider routing',
 ]
 
 export const services = [
   { num: '01', name: 'Per-second output billing', desc: 'Every model is billed strictly per second of rendered output. No rounding up to whole minutes, no wasted credits.' },
-  { num: '02', name: 'One unified balance', desc: 'Deposit once with Robinhood ETH. Credits are spendable across Google, Kling, MiniMax, and Runway.' },
-  { num: '03', name: 'Zero subscription traps', desc: 'Stop juggling multiple $30/month tier subscriptions. Keep ETH on Robinhood Chain and generate only when inspiration strikes.' },
+  { num: '02', name: 'One unified balance', desc: 'Deposit once with ETH. Credits are spendable across Google, Kling, MiniMax, and Runway.' },
+  { num: '03', name: 'Zero subscription traps', desc: 'Stop juggling multiple $30/month tier subscriptions. Keep ETH on Ethereum and generate only when inspiration strikes.' },
   { num: '04', name: 'Instant failure refunds', desc: 'If any upstream model fails, timeouts, or errors, your credits are refunded immediately to your on-chain ledger.' },
   { num: '05', name: 'Native audio & 4K support', desc: 'Switch dynamically between budget tiers (Open-Sora at $0.03/s) and Hollywood-grade 4K audio (Veo 3.1 at $0.42/s).' },
-  { num: '06', name: 'Full on-chain audit trail', desc: 'Every generation job, model invocation, and micropayment is metered, verified, and queryable on Robinhood Chain.' },
+  { num: '06', name: 'Full on-chain audit trail', desc: 'Every generation job, model invocation, and micropayment is metered, verified, and queryable on Ethereum.' },
 ]
 
 export const stats = [
@@ -67,6 +67,6 @@ export const marquee = [
   'MiniMax Hailuo 2.3 Pro',
   'Runway Gen',
   'Open-Sora 2.0',
-  'Robinhood Chain',
+  'Ethereum',
   'ETH Settlement Rail',
 ]

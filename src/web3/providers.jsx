@@ -2,13 +2,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
 import { WagmiProvider } from 'wagmi'
 import { wagmiConfig } from './config'
-import { robinhood } from './chain'
+import { ethereum } from './chain'
 import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient()
 
 const theme = lightTheme({
-  accentColor: '#a5ce1f',
+  accentColor: '#111318',
   accentColorForeground: '#ffffff',
   borderRadius: 'medium',
   fontStack: 'system',
@@ -21,7 +21,7 @@ export default function Web3Providers({ children }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={theme}
-          initialChain={robinhood}
+          initialChain={ethereum}
           locale="en-US"
           appInfo={{ appName: 'Liquid Intelligence' }}
         >

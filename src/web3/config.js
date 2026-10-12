@@ -1,38 +1,38 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { http } from 'wagmi'
 import {
+  coinbaseWallet,
   injectedWallet,
   metaMaskWallet,
   rainbowWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets'
-import { robinhood } from './chain'
-import { robinhoodWallet } from './wallets'
+import { ethereum } from './chain'
 
 export const walletConnectProjectId =
   import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '21fef48091f12692cad574a6f7753643'
 
 const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
-/** Robinhood mainnet only — no testnet in the wallet connector. */
+/** Ethereum mainnet only. */
 export const wagmiConfig = getDefaultConfig({
   appName: 'Liquid Intelligence',
-  appDescription: 'AI infrastructure marketplace on Robinhood Chain.',
+  appDescription: 'AI infrastructure marketplace on Ethereum.',
   appUrl: appUrl || 'https://payrent.app',
   appIcon: `${appUrl}/assets/logo-square.png`,
   projectId: walletConnectProjectId,
-  chains: [robinhood],
+  chains: [ethereum],
   transports: {
-    [robinhood.id]: http(robinhood.rpcUrls.default.http[0]),
+    [ethereum.id]: http(ethereum.rpcUrls.default.http[0]),
   },
   wallets: [
     {
-      groupName: 'Robinhood',
-      wallets: [robinhoodWallet, walletConnectWallet],
+      groupName: 'Popular',
+      wallets: [metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet],
     },
     {
       groupName: 'Also supported',
-      wallets: [injectedWallet, metaMaskWallet, rainbowWallet],
+      wallets: [injectedWallet],
     },
   ],
   ssr: false,

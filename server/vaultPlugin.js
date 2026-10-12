@@ -4,7 +4,7 @@
  */
 import { createPublicClient, createWalletClient, http, isAddress, getAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { robinhood, robinhoodTestnet } from '../src/web3/chain.js'
+import { ethereum } from '../src/web3/chain.js'
 import { apiKeyMarketplaceAbi, microToCredits } from '../src/web3/apiKeyMarketplaceAbi.js'
 import { openApiKeyServer } from './vaultDecrypt.js'
 
@@ -16,12 +16,11 @@ const UPSTREAM = {
 }
 
 function marketChain() {
-  return process.env.VITE_DEPOSIT_NETWORK === 'testnet' ? robinhoodTestnet : robinhood
+  return ethereum
 }
 
 function marketRpc() {
-  const chain = marketChain()
-  return process.env.VITE_ROBINHOOD_RPC || chain.rpcUrls.default.http[0]
+  return process.env.VITE_ETH_RPC_URL || process.env.ETH_RPC_URL || ethereum.rpcUrls.default.http[0]
 }
 
 function marketPublicClient() {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { useChain } from './ChainContext'
-import { SHOW_ROBINHOOD } from './visibility'
+import { SHOW_NEAR, SHOW_ROBINHOOD } from './visibility'
 
 const OPTIONS = [
   { id: 'eth', label: 'ETH' },
@@ -10,7 +10,7 @@ const OPTIONS = [
 
 export default function ChainTab() {
   const { chain, setChain } = useChain()
-  if (!SHOW_ROBINHOOD) return null
+  if (!SHOW_ROBINHOOD || !SHOW_NEAR) return null
 
   return (
     <div
@@ -28,7 +28,7 @@ export default function ChainTab() {
             aria-selected={active}
             className={cn(
               'h-8 rounded-full px-2.5 text-[11px] font-semibold tracking-wide transition-colors sm:px-3 sm:text-[12px]',
-              active ? 'bg-primary text-primary-foreground' : 'text-foreground/60 hover:text-foreground',
+              active ? 'bg-foreground text-background' : 'text-foreground/60 hover:text-foreground',
             )}
             onClick={() => setChain(option.id)}
           >

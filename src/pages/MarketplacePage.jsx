@@ -91,13 +91,13 @@ export default function MarketplacePage() {
   const rentalBalance = activeRental ? rentalForListing(activeRental.listingId) : null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F0F1F4]">
       <div className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-24 sm:px-8 lg:px-14 xl:px-20">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="mb-8 size-10 rounded-full"
+          className="mb-8 size-10 rounded-full bg-card"
           onClick={goBack}
           aria-label="Back to home"
         >
@@ -121,7 +121,7 @@ export default function MarketplacePage() {
             <Button
               type="button"
               variant="outline"
-              className="shrink-0 rounded-full px-5"
+              className="shrink-0 rounded-full bg-background px-5"
               onClick={clearStudio}
             >
               <X size={15} strokeWidth={2} aria-hidden />
@@ -160,18 +160,18 @@ export default function MarketplacePage() {
                       'inline-flex h-10 items-center rounded-full border px-4 text-[12px] font-medium',
                       onDepositChain
                         ? 'border-border bg-card text-muted-foreground'
-                        : 'border-warning/30 bg-warning-soft text-warning-ink',
+                        : 'border-amber-300 bg-amber-50 text-amber-700',
                     )}
                   >
                     {onDepositChain ? copy.network : copy.wrongNetwork}
                   </span>
-                  <span className="inline-flex h-10 items-center rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground">
+                  <span className="inline-flex h-10 items-center rounded-full bg-foreground px-4 text-[12px] font-semibold text-background">
                     {balance.toFixed(2)} credits
                   </span>
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-10 min-h-10 rounded-full px-5"
+                    className="h-10 min-h-10 rounded-full bg-card px-5"
                     onClick={(e) => openDeposit(e.currentTarget)}
                   >
                     <Plus size={15} strokeWidth={2} aria-hidden />
@@ -182,7 +182,7 @@ export default function MarketplacePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-full px-6"
+                  className="h-11 rounded-full border-border bg-card px-6"
                   onClick={() => (isNear ? near.connect() : openConnectModal?.())}
                 >
                   <Wallet size={15} strokeWidth={2} aria-hidden />
@@ -209,7 +209,7 @@ export default function MarketplacePage() {
                   className={cn(
                     'inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-medium transition-colors duration-200 sm:flex-none',
                     active
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-foreground text-background'
                       : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                   )}
                   onClick={() => setMarketplaceTab(tab.id)}

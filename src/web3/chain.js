@@ -1,4 +1,15 @@
 import { defineChain } from 'viem'
+import { mainnet } from 'viem/chains'
+
+const ETH_RPC = import.meta.env?.VITE_ETH_RPC_URL || 'https://ethereum-rpc.publicnode.com'
+
+export const ethereum = defineChain({
+  ...mainnet,
+  name: 'Ethereum',
+  rpcUrls: {
+    default: { http: [ETH_RPC] },
+  },
+})
 
 export const robinhood = defineChain({
   id: 4663,

@@ -48,7 +48,7 @@ export default function LandingAbout() {
             return (
               <li key={step.t} className="landing-glass-card flex flex-col p-5 sm:p-6">
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                  <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-foreground text-background">
                     <Icon size={22} strokeWidth={1.6} aria-hidden />
                   </span>
                   <span className="font-serif text-[22px] leading-none text-foreground/25">

@@ -4,13 +4,13 @@ import { ChromaFlow, FilmGrain, FlutedGlass, Shader, Swirl } from 'shaders/react
 export function ShaderBackground() {
   return (
     <Shader style={{ width: '100%', height: '100%' }}>
-      <Swirl colorA="#f7f8f2" colorB="#e4ecd4" detail={1.55} />
+      <Swirl colorA="#ffffff" colorB="#e6e8ef" detail={1.55} />
       <ChromaFlow
-        baseColor="#f4f6ef"
-        downColor="#dde6cc"
-        leftColor="#e7f3c4"
-        rightColor="#c9de8a"
-        upColor="#f8faf4"
+        baseColor="#f4f5f8"
+        downColor="#c3c7d4"
+        leftColor="#d2d5e0"
+        rightColor="#b4b8c6"
+        upColor="#eceef4"
         momentum={18}
         radius={3.8}
       />

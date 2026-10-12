@@ -129,7 +129,7 @@ export default function VideoResultModal() {
               {downloaded ? 'Opened' : 'Download MP4'}
             </a>
           </Button>
-          <Button type="button" variant="outline" className="rounded-full" onClick={generateAnother}>
+          <Button type="button" variant="outline" className="rounded-full bg-background" onClick={generateAnother}>
             <RotateCcw size={15} strokeWidth={2} aria-hidden />
             Prompt again
           </Button>

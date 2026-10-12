@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { SHOW_ROBINHOOD } from './visibility'
+import { SHOW_NEAR, SHOW_ROBINHOOD } from './visibility'
 
 const STORAGE_KEY = 'liq_chain'
 const ChainContext = createContext(null)
+const CAN_SWITCH = SHOW_ROBINHOOD && SHOW_NEAR
 
 function readChain() {
+  if (!SHOW_NEAR) return 'eth'
   if (!SHOW_ROBINHOOD) return 'near'
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -18,34 +20,34 @@ const COPY = {
   eth: {
     id: 'eth',
     asset: 'ETH',
-    network: 'Robinhood Chain',
-    networkShort: 'Robinhood',
-    connect: 'Connect Robinhood',
-    connectHint: 'Connect Robinhood Wallet on Robinhood Chain mainnet.',
+    network: 'Ethereum mainnet',
+    networkShort: 'Ethereum',
+    connect: 'Connect wallet',
+    connectHint: 'Connect an Ethereum wallet on mainnet.',
     deposit: 'Deposit ETH',
     walletAsset: 'Wallet ETH',
-    settlementTitle: 'Robinhood ETH settlement',
-    settlementBody: 'Deposits settle in native ETH on Robinhood Chain. Verifiable, fast, non-custodial.',
-    hero: 'Generate AI. Rent API access. Pay only for what you use — settled in ETH on Robinhood mainnet.',
-    about: 'Deposit ETH on Robinhood Chain, unlock video models and text LLMs, or rent listed API keys. Every call burns credits — listers earn when others use their keys. Raw secrets stay vault-encrypted; only ciphertext lives on-chain.',
-    depositStep: 'Fund credits with Robinhood ETH.',
+    settlementTitle: 'Ethereum settlement',
+    settlementBody: 'Deposits settle in native ETH on Ethereum mainnet. Verifiable and non-custodial.',
+    hero: 'Generate AI. Rent API access. Pay only for what you use — settled in ETH on Ethereum mainnet.',
+    about: 'Deposit ETH on Ethereum, unlock video models and text LLMs, or rent listed API keys. Every call burns credits — listers earn when others use their keys. Raw secrets stay vault-encrypted; only ciphertext lives on-chain.',
+    depositStep: 'Fund credits with ETH.',
     keys: 'Rent listed keys with ETH. Ciphertext on-chain; decrypt only in the vault proxy.',
-    payments: 'Deposits, spends, rents, and claims in one readable ledger on Robinhood.',
-    footerTitle: 'Generate and rent on Robinhood.',
-    footerBody: 'AI infrastructure marketplace with on-chain credits on Robinhood Chain.',
-    footerMeta: '© 2026 Liquid Intelligence. Built on Robinhood Chain.',
-    studio: 'Create with AI models. Every call is metered in credits and settled on Robinhood Chain.',
-    bannerList: 'Publish a key for others to rent. Metered calls pay you on Robinhood Chain — secrets stay vault-encrypted.',
+    payments: 'Deposits, spends, rents, and claims in one readable ledger on Ethereum.',
+    footerTitle: 'Generate and rent on Ethereum.',
+    footerBody: 'AI infrastructure marketplace with on-chain credits on Ethereum mainnet.',
+    footerMeta: '© 2026 Liquid Intelligence. Built on Ethereum.',
+    studio: 'Create with AI models. Every call is metered in credits and settled on Ethereum.',
+    bannerList: 'Publish a key for others to rent. Metered calls pay you on Ethereum — secrets stay vault-encrypted.',
     bannerRent: 'Unlock vault-proxied API access with ETH. Pay per call, not a subscription.',
     bannerStudio: 'Video models and text LLMs share one credit pool. Every call is metered and settled in ETH.',
     apiMarket: 'Find API access for AI workloads. Rent with ETH — pay only for what you use.',
-    paymentsLead: 'Every deposit, spend, key rent, and claim from this wallet on Robinhood Chain. Syncs on-chain events with local studio activity.',
-    paymentsConnect: 'Connect Robinhood Wallet to open your payment ledger and analytics.',
-    earningsLead: 'Usage fees from rented keys. Platform keeps the fee; claim the rest to your wallet on Robinhood Chain.',
-    earningsConnect: 'Connect Robinhood Wallet to see listings you own and claimable fees.',
+    paymentsLead: 'Every deposit, spend, key rent, and claim from this wallet on Ethereum. Syncs on-chain events with local studio activity.',
+    paymentsConnect: 'Connect an Ethereum wallet to open your payment ledger and analytics.',
+    earningsLead: 'Usage fees from rented keys. Platform keeps the fee; claim the rest to your wallet on Ethereum.',
+    earningsConnect: 'Connect an Ethereum wallet to see listings you own and claimable fees.',
     listPrice: 'Set the credit cost per metered call. Renters deposit ETH; credits burn per call.',
     listDone: 'Renters can deposit ETH on the market page.',
-    wrongNetwork: 'Switch to Robinhood',
+    wrongNetwork: 'Switch to Ethereum',
     ledgerEnv: 'VITE_CREDIT_LEDGER_ADDRESS',
     minHint: 'ETH',
   },
@@ -89,7 +91,7 @@ export function ChainProvider({ children }) {
   const [chain, setChainState] = useState(readChain)
 
   useEffect(() => {
-    if (!SHOW_ROBINHOOD) return
+    if (!CAN_SWITCH) return
     try {
       localStorage.setItem(STORAGE_KEY, chain)
     } catch {
@@ -103,7 +105,7 @@ export function ChainProvider({ children }) {
       isNear: chain === 'near',
       copy: COPY[chain],
       setChain: (next) => {
-        if (!SHOW_ROBINHOOD) return
+        if (!CAN_SWITCH) return
         setChainState(next === 'near' ? 'near' : 'eth')
       },
     }),

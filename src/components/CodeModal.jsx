@@ -24,7 +24,7 @@ export default function CodeModal({ isOpen, onClose, modelId }) {
     if (isOmni) return omniCodeSnippets[activeTab] || omniCodeSnippets.javascript
     if (isVeo) return veoCodeSnippets[activeTab] || veoCodeSnippets.javascript
     if (isKling) return klingCodeSnippets[activeTab] || klingCodeSnippets.javascript
-    return `// Model: ${modelId}\n// Rate: Metered per compute second on Robinhood Chain`
+    return `// Model: ${modelId}\n// Rate: Metered per compute second on Ethereum`
   }
 
   const code = getCode()

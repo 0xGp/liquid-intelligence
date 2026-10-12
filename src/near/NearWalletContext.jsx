@@ -7,6 +7,7 @@ import {
   viewNativeYocto,
   yoctoToNear,
 } from './rpc'
+import { SHOW_NEAR } from '../chain/visibility'
 
 const NearWalletContext = createContext(null)
 
@@ -48,6 +49,7 @@ export function NearWalletProvider({ children }) {
   }, [accountId])
 
   useEffect(() => {
+    if (!SHOW_NEAR) return undefined
     const current = getConnector()
     const onIn = (event) => setAccountId(event.accounts?.[0]?.accountId ?? null)
     const onOut = () => {

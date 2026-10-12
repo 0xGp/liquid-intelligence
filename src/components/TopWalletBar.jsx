@@ -17,7 +17,7 @@ export default function TopWalletBar() {
   if (!isConnected) return null
 
   const isZero = balance <= 0
-  const networkLabel = DEPOSIT_CHAIN.testnet ? 'Robinhood Testnet' : 'Robinhood Chain'
+  const networkLabel = DEPOSIT_CHAIN.name
 
   return (
     <div className="top-wallet-bar-container">

@@ -1,4 +1,4 @@
-/** Minimal ABI for Vince ApiKeyMarketplace (Robinhood testnet). */
+/** Minimal ABI for Vince ApiKeyMarketplace (Ethereum mainnet). */
 export const apiKeyMarketplaceAbi = [
   {
     type: 'constructor',
@@ -167,7 +167,7 @@ export function microToCredits(micro) {
   return Number(micro) / Number(MICRO_CREDITS)
 }
 
-/** Deployed marketplace on Robinhood testnet (set after deploy). */
+/** Deployed marketplace on Ethereum mainnet (set after deploy). */
 export function marketplaceAddress() {
   const a = import.meta.env.VITE_API_KEY_MARKET_ADDRESS
   return a && a.startsWith('0x') ? a : null

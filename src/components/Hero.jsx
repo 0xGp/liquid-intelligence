@@ -33,14 +33,14 @@ export default function Hero() {
             </h1>
             <p className="hero-subhead-spec">
               Generate AI. Rent API access. Pay only for what you use — settled in ETH on
-              Robinhood Chain.
+              Ethereum.
             </p>
             <div className="hero-cta-row">
               <button type="button" className="hero-cta-primary" onClick={goToMarketplace}>
                 Explore Marketplace
               </button>
               <button type="button" className="hero-cta-secondary" onClick={() => openConnectModal?.()}>
-                Connect Robinhood
+                Connect wallet
               </button>
             </div>
           </>
@@ -49,7 +49,7 @@ export default function Hero() {
             <p className="hero-kicker">Wallet {shortId(address)}</p>
             <h1 className="hero-headline">{balance.toFixed(2)} credits</h1>
             <p className="hero-subhead-spec">
-              Deposit ETH on Robinhood mainnet, then open the marketplace to generate or chat.
+              Deposit ETH on Ethereum mainnet, then open the marketplace to generate or chat.
             </p>
             <div className="hero-cta-row">
               <button type="button" className="hero-cta-primary" onClick={goToMarketplace}>

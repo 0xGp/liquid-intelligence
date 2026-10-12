@@ -1,8 +1,8 @@
 import { getAddress, isAddress, parseEther } from 'viem'
-import { robinhood } from './chain'
+import { ethereum } from './chain'
 
-/** Deposit settlement network — Robinhood mainnet only. */
-export const DEPOSIT_CHAIN = robinhood
+/** Deposit settlement network — Ethereum mainnet only. */
+export const DEPOSIT_CHAIN = ethereum
 
 /** Minimum native ETH deposit. */
 export const MIN_DEPOSIT_ETH = 0.001

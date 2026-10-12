@@ -1,23 +1,23 @@
 /**
- * Compile + deploy ApiKeyMarketplace to Robinhood Chain.
+ * Compile + deploy ApiKeyMarketplace (Ethereum mainnet by default).
  *
  * Usage:
  *   node scripts/deploy-api-key-market.mjs
  *
  * Network:
- *   DEPLOY_NETWORK=mainnet|testnet  (defaults to VITE_DEPOSIT_NETWORK, then mainnet)
+ *   DEPLOY_NETWORK=ethereum|robinhood|robinhood-testnet  (defaults to ethereum)
  *
  * Uses DEPLOYER_PRIVATE_KEY from .env.
  * Treasury defaults to VITE_VINCE_TREASURY, then deployer.
  *
- * Writes artifacts/api-key-market-deployment.json
+ * Writes artifacts/api-key-market-<network>.json
  */
 import { createWalletClient, createPublicClient, http, getAddress, isAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
-import { loadEnvFile, resolveNetwork, root } from './robinhood-networks.mjs'
+import { loadEnvFile, resolveNetwork, root } from './networks.mjs'
 
 loadEnvFile()
 
@@ -121,7 +121,7 @@ const out = {
   deployedAt: new Date().toISOString(),
 }
 
-writeFileSync(join(artifactsDir, 'api-key-market-deployment.json'), JSON.stringify(out, null, 2))
+writeFileSync(join(artifactsDir, `api-key-market-${chain.slug}.json`), JSON.stringify(out, null, 2))
 
 console.log('\nDeployed ApiKeyMarketplace')
 console.log(`Address: ${address}`)

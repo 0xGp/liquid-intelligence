@@ -36,7 +36,7 @@ export default function WalletButton() {
         if (!connected) {
           return (
             <button type="button" className="wallet-btn" onClick={openConnectModal} data-hover>
-              Connect Robinhood
+              {copy.connect}
             </button>
           )
         }
@@ -52,7 +52,7 @@ export default function WalletButton() {
         return (
           <div className="wallet-pair">
             <button type="button" className="wallet-btn wallet-btn-chain" onClick={openChainModal}>
-              {chain.name.replace('Robinhood Chain', 'Robinhood')}
+              {chain.name}
             </button>
             <button type="button" className="wallet-btn" onClick={openAccountModal} title={account.address}>
               {shortId(account.address)}

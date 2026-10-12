@@ -4,7 +4,7 @@ export default function FinalCta() {
       <h2>
         Models and keys.
         <br />
-        One Robinhood treasury.
+        One Ethereum treasury.
       </h2>
       <div className="final-cta-actions">
         <a href="#marketplace" className="key-rent-primary" data-hover>

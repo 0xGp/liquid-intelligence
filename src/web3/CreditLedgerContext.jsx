@@ -31,6 +31,7 @@ import {
 } from './creditLedger'
 import { isUserRejection } from './agents'
 import { recordPayment } from './paymentLedger'
+import { assertDeployed } from './contractGuard'
 
 const CreditLedgerContext = createContext(null)
 
@@ -99,6 +100,7 @@ export function CreditLedgerProvider({ children }) {
 
       setPending(true)
       try {
+        await assertDeployed(publicClient, ledger, 'Credit ledger')
         await ensureDepositChain()
         const value = parseDepositEth(num)
         const hash = await writeContractAsync({
@@ -148,6 +150,7 @@ export function CreditLedgerProvider({ children }) {
       isConnected,
       address,
       ensureDepositChain,
+      publicClient,
       writeContractAsync,
       refreshBalance,
     ]

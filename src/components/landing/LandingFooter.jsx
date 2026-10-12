@@ -36,7 +36,7 @@ export default function LandingFooter() {
               <Button
                 type="button"
                 size="lg"
-                className="group h-auto justify-between rounded-full bg-primary py-2.5 ps-6 pe-2 text-[14px] text-primary-foreground hover:bg-[#96be1c]"
+                className="group h-auto justify-between rounded-full bg-foreground py-2.5 ps-6 pe-2 text-[14px] text-background hover:bg-foreground"
                 onClick={() => {
                   window.location.hash = '#marketplace'
                 }}

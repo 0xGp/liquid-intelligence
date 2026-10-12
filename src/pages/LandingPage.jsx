@@ -44,10 +44,11 @@ export default function LandingPage() {
   return (
     <div className="relative bg-transparent text-foreground antialiased">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <Suspense fallback={<div className="h-full w-full bg-background" />}>
+        <Suspense fallback={<div className="h-full w-full bg-[#F3F4F6]" />}>
           <ShaderBackground />
         </Suspense>
       </div>
+
       <main id="main" className="relative z-10">
         <LandingHero />
         <LandingAbout />

@@ -149,7 +149,7 @@ h1,
 /* RainbowKit connect button restyle */
 .wallet-btn {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
   border: none !important;
   border-radius: 999px !important;
   font-size: 13px !important;
@@ -481,7 +481,7 @@ html.is-landing-scroll body {
 
 .pr-btn-primary {
   background: var(--pr-brand);
-  color: #111318;
+  color: #fff;
 }
 
 .pr-btn-primary:hover {
@@ -583,7 +583,7 @@ html.is-landing-scroll body {
 .mp-category-tab.is-active,
 .filter-btn.is-active {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
 }
 
 .mp-pill,
@@ -600,7 +600,7 @@ html.is-landing-scroll body {
 .generate-cta-btn,
 .zero-deposit-btn {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
   border-radius: var(--pr-radius-btn) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
@@ -762,7 +762,7 @@ html.is-landing-scroll body {
 
 .hero-cta-primary {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
   border: none !important;
 }
 
@@ -853,7 +853,7 @@ footer:not(.landing-footer) a,
 
 .pr-skeleton {
   display: block;
-  background: linear-gradient(90deg, #e8ecdf 25%, #f4f6ef 50%, #e8ecdf 75%);
+  background: linear-gradient(90deg, #eef0f3 25%, #f7f8fa 50%, #eef0f3 75%);
   background-size: 200% 100%;
   animation: pr-shimmer 1.2s ease-in-out infinite;
 }
@@ -968,7 +968,7 @@ footer:not(.landing-footer) a,
 .pr-step.is-done .pr-step-num {
   background: var(--pr-brand);
   border-color: var(--pr-brand);
-  color: #111318;
+  color: #fff;
 }
 
 .pr-step-actions {
@@ -1054,7 +1054,7 @@ footer:not(.landing-footer) a,
 .zero-deposit-btn,
 .ak-solid-btn {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
   border-color: var(--pr-brand) !important;
 }
 
@@ -1132,7 +1132,7 @@ footer:not(.landing-footer) a,
 
 .studio-sheet-panel .prompt-chat-bubble.is-user {
   background: var(--pr-brand) !important;
-  color: #111318 !important;
+  color: #fff !important;
   border-color: var(--pr-brand) !important;
 }
 
@@ -1205,7 +1205,7 @@ footer:not(.landing-footer) a,
 }
 
 .studio-sheet-panel .job-progress-track {
-  background: #dde3d2 !important;
+  background: #e7e9ed !important;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1217,8 +1217,8 @@ footer:not(.landing-footer) a,
 .studio-sheet-panel .live-api-logs-console,
 .studio-sheet-panel .raw-response-box,
 .studio-sheet-panel .kling-key-edit-box {
-  background: #161a12 !important;
-  color: #f4f6ef !important;
+  background: #111318 !important;
+  color: #e7e9ed !important;
   border-radius: 16px !important;
   border: none !important;
 }

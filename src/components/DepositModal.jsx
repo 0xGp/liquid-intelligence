@@ -24,7 +24,7 @@ const NEAR_PRESETS = [0.003, 0.01, 0.05, 0.1]
 const chip =
   'inline-flex h-8 items-center rounded-full border border-border bg-background px-3 text-[12px] font-medium text-foreground hover:bg-secondary'
 const chipOn =
-  'border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+  'border-foreground bg-foreground text-background hover:bg-foreground hover:text-background'
 
 export default function DepositModal() {
   const {
@@ -102,7 +102,7 @@ export default function DepositModal() {
     setError('')
     setStatus('')
     if (!isConnected || !address) {
-      setError(isNear ? 'Connect a NEAR wallet first.' : 'Connect Robinhood Wallet first.')
+      setError(isNear ? 'Connect a NEAR wallet first.' : 'Connect an Ethereum wallet first.')
       return
     }
     if (!ledgerConfigured || !ledgerAddress) {
@@ -273,7 +273,7 @@ export default function DepositModal() {
               )}
 
               {!ledgerConfigured && (
-                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
                   <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
                     Ledger not deployed. Set <code className="font-medium">{copy.ledgerEnv}</code>.
@@ -285,7 +285,7 @@ export default function DepositModal() {
                 <p className="text-[13px] leading-relaxed text-muted-foreground">{status}</p>
               )}
               {error && (
-                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft px-3.5 py-3 text-[13px] text-warning-ink">
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] text-amber-900">
                   <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden />
                   <span>{error}</span>
                 </div>
@@ -299,7 +299,7 @@ export default function DepositModal() {
         {done ? (
           <button
             type="button"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92"
             onClick={close}
           >
             Done
@@ -307,7 +307,7 @@ export default function DepositModal() {
         ) : !isConnected ? (
           <button
             type="button"
-            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92"
             onClick={() => (isNear ? near.connect() : openConnectModal?.())}
           >
             {copy.connect}
@@ -317,7 +317,7 @@ export default function DepositModal() {
             <button
               type="button"
               className={cn(
-                'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-92 disabled:opacity-40',
+                'inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[14px] font-semibold text-background transition-opacity hover:opacity-92 disabled:opacity-40',
               )}
               disabled={isDepositPending || !ledgerConfigured || !amountValid}
               onClick={runDeposit}

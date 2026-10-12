@@ -43,6 +43,7 @@ import {
 } from './apiKeyMarketplaceAbi'
 import { sealApiKey, bytesToHex } from './vaultCrypto'
 import { explorerTx, isUserRejection, shortId } from './agents'
+import { assertDeployed } from './contractGuard'
 
 const ApiKeyMarketContext = createContext(null)
 
@@ -288,6 +289,7 @@ export function ApiKeyMarketProvider({ children }) {
   }, [myListings, earningsByListing])
 
   const ensureChain = async () => {
+    if (onChainEnabled) await assertDeployed(publicClient, market, 'Key marketplace')
     if (chainId !== DEPOSIT_CHAIN.id) {
       await switchChainAsync({ chainId: DEPOSIT_CHAIN.id })
     }
@@ -295,7 +297,7 @@ export function ApiKeyMarketProvider({ children }) {
 
   const blockNearMarket = () => {
     if (!isNear) return
-    throw new Error('Key listings, rents, and claims stay on Robinhood. Switch the chain tab to ETH.')
+    throw new Error('Key listings, rents, and claims settle on Ethereum. Switch the chain tab to ETH.')
   }
 
   const createListing = async ({
@@ -310,7 +312,7 @@ export function ApiKeyMarketProvider({ children }) {
     setLastTx(null)
     blockNearMarket()
     if (!isConnected || !address) {
-      throw new Error('Connect Robinhood Wallet to list a key.')
+      throw new Error('Connect an Ethereum wallet to list a key.')
     }
     const key = String(apiKey || '').trim()
     if (key.length < 12) throw new Error('Paste a valid API key (min 12 characters).')

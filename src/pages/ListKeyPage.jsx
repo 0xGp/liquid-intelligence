@@ -129,7 +129,7 @@ export default function ListKeyPage() {
   const listerShare = (10000 - platformFeeBps) / 100
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F0F1F4]">
       <div className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-8 sm:px-8 lg:px-14 xl:px-20">
         <Button
           type="button"
@@ -179,7 +179,7 @@ export default function ListKeyPage() {
                     className={cn(
                       'inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-medium transition-colors sm:flex-none sm:px-4 sm:text-[13px]',
                       i === step
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-foreground text-background'
                         : i < step
                           ? 'text-foreground hover:bg-secondary'
                           : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
@@ -253,7 +253,7 @@ export default function ListKeyPage() {
                             className={cn(
                               'inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-medium transition-colors',
                               active
-                                ? 'border-primary bg-primary text-primary-foreground'
+                                ? 'border-foreground bg-foreground text-background'
                                 : 'border-border bg-background text-muted-foreground hover:text-foreground',
                             )}
                           >

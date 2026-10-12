@@ -5,7 +5,7 @@ import { useAccount, useBalance, useSendTransaction, useSignTypedData, useSwitch
 import { waitForTransactionReceipt } from 'wagmi/actions'
 import WalletButton from './WalletButton'
 import AgentUse from './AgentUse'
-import { robinhood, robinhoodTestnet, VINCE_DOMAIN, RENT_TYPES } from '../web3/chain'
+import { ethereum, VINCE_DOMAIN, RENT_TYPES } from '../web3/chain'
 import { wagmiConfig } from '../web3/config'
 import {
   PROVIDERS,
@@ -19,7 +19,7 @@ import {
 
 const STEPS = [
   { id: 'auth', label: 'Authorize', hint: 'Sign with your wallet id' },
-  { id: 'hold', label: 'Hold', hint: 'Pay on Robinhood Chain' },
+  { id: 'hold', label: 'Hold', hint: 'Pay on Ethereum' },
   { id: 'work', label: 'Work', hint: 'Receiving agent runs' },
   { id: 'meter', label: 'Meter', hint: 'Actual units used' },
   { id: 'settle', label: 'Settle', hint: 'Receipt + tx hash' },
@@ -49,13 +49,13 @@ export default function Rail() {
   const [selected, setSelected] = useState(PROVIDERS[0].id)
   const [busy, setBusy] = useState(false)
   const [step, setStep] = useState('idle')
-  const [status, setStatus] = useState('Connect Robinhood. Sign the rent. Pay the call. Use the agent.')
+  const [status, setStatus] = useState('Connect a wallet. Sign the rent. Pay the call. Use the agent.')
   const [receipts, setReceipts] = useState([])
   const [session, setSession] = useState(null)
   const runId = useRef(0)
 
   const provider = PROVIDERS.find((p) => p.id === selected)
-  const onRobinhood = chainId === robinhood.id || chainId === robinhoodTestnet.id
+  const onEthereum = chainId === ethereum.id
   const payEth = provider ? usdToWeiString(provider.price) : '0'
   const destination = address ? payTo(provider, address) : provider?.address
 
@@ -68,7 +68,7 @@ export default function Rail() {
     if (busy || !provider) return
     if (!isConnected || !address) {
       openConnectModal?.()
-      setStatus('Connect Robinhood Wallet (or another wallet) to rent.')
+      setStatus('Connect an Ethereum wallet to rent.')
       return
     }
 
@@ -77,12 +77,11 @@ export default function Rail() {
     setSession(null)
 
     try {
-      let network = chainId === robinhoodTestnet.id ? robinhoodTestnet : robinhood
-      if (chainId !== robinhood.id && chainId !== robinhoodTestnet.id) {
+      const network = ethereum
+      if (chainId !== ethereum.id) {
         setStep('auth')
-        setStatus('Switching to Robinhood Chain…')
-        await switchChainAsync({ chainId: robinhood.id })
-        network = robinhood
+        setStatus('Switching to Ethereum…')
+        await switchChainAsync({ chainId: ethereum.id })
       }
 
       const units = provider.id === 'north' ? 12 + Math.floor(Math.random() * 8) : 1 + Math.floor(Math.random() * 3)
@@ -118,7 +117,7 @@ export default function Rail() {
       if (id !== runId.current) return
 
       setStep('hold')
-      setStatus(`Sending ${usdToWeiString(estimate)} ETH on Robinhood Chain to hold the call.`)
+      setStatus(`Sending ${usdToWeiString(estimate)} ETH on Ethereum to hold the call.`)
 
       const hash = await sendTransactionAsync({
         to,
@@ -128,7 +127,7 @@ export default function Rail() {
       })
       if (id !== runId.current) return
 
-      setStatus(`Held in tx ${shortId(hash)}. Waiting for Robinhood Chain…`)
+      setStatus(`Held in tx ${shortId(hash)}. Waiting for Ethereum…`)
       await waitForTransactionReceipt(wagmiConfig, { hash, chainId: network.id })
       if (id !== runId.current) return
 
@@ -167,7 +166,7 @@ export default function Rail() {
         signature,
         hash,
       })
-      setStatus(`Settled on Robinhood Chain. ${provider.name} is yours to use.`)
+      setStatus(`Settled on Ethereum. ${provider.name} is yours to use.`)
       setStep('done')
     } catch (err) {
       const detail = `${err?.shortMessage || ''} ${err?.message || ''}`
@@ -175,7 +174,7 @@ export default function Rail() {
       if (isUserRejection(err)) {
         setStatus('Cancelled in wallet. Nothing was paid.')
       } else if (/insufficient|exceeds allowance|exceeds the balance/i.test(detail)) {
-        setStatus('Not enough ETH on Robinhood Chain for this hold. Bridge a little ETH, then rent again.')
+        setStatus('Not enough ETH on Ethereum for this hold. Add a little ETH, then rent again.')
       } else {
         setStatus(err?.shortMessage || err?.message || 'The rail could not complete this rent.')
       }
@@ -204,11 +203,11 @@ export default function Rail() {
   return (
     <section className="rail">
       <div className="rail-head">
-        <p className="rail-kicker">Robinhood Chain · RainbowKit</p>
+        <p className="rail-kicker">Ethereum · RainbowKit</p>
         <h1>Rent an agent. Pay on-chain.</h1>
         <p className="rail-lede">
-          Connect with Robinhood Wallet. Vince uses that wallet id, asks you to sign the rent, then sends a small ETH
-          payment on Robinhood Chain. After the tx lands, you use the agent.
+          Connect an Ethereum wallet. Vince uses that wallet id, asks you to sign the rent, then sends a small ETH
+          payment on Ethereum mainnet. After the tx lands, you use the agent.
         </p>
       </div>
 
@@ -217,13 +216,13 @@ export default function Rail() {
           <div className="rail-card-label">Paying agent</div>
           <h2>{isConnected ? 'Your wallet' : 'Not connected'}</h2>
           <p className="rail-meta">
-            {isConnected ? `Wallet id ${shortId(address)}` : 'Connect Robinhood to get a wallet id'}
+            {isConnected ? `Wallet id ${shortId(address)}` : 'Connect a wallet to get a wallet id'}
           </p>
           <div className="rail-wallet-slot">
             <WalletButton />
           </div>
           <div className="rail-balance">
-            <span>{onRobinhood ? 'ETH on this chain' : 'Balance'}</span>
+            <span>{onEthereum ? 'ETH on this chain' : 'Balance'}</span>
             <strong>{balance ? `${Number(balance.formatted).toPrecision(4)} ${balance.symbol}` : '—'}</strong>
           </div>
           <div className="rail-policy">
@@ -233,7 +232,7 @@ export default function Rail() {
             </div>
             <div>
               <span>Network</span>
-              <b>{chain?.name || 'Robinhood Chain'}</b>
+              <b>{chain?.name || 'Ethereum'}</b>
             </div>
           </div>
         </article>
@@ -264,7 +263,7 @@ export default function Rail() {
             ))}
           </ul>
           <p className="rail-payhint">
-            This rent signs with your wallet id, then sends about {payEth} ETH on Robinhood Chain
+            This rent signs with your wallet id, then sends about {payEth} ETH on Ethereum
             {destination ? ` to ${shortId(destination)}` : ''}. Without a treasury env, the hold
             returns to you so you only spend gas.
           </p>

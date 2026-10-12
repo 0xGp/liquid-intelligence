@@ -146,7 +146,7 @@ export default function MarketplaceGrid() {
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-medium transition-colors duration-200',
                   active
-                    ? 'border-accent bg-accent text-accent-foreground'
+                    ? 'border-foreground bg-foreground text-background'
                     : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground',
                 )}
                 onClick={() => setActiveFilter(filter)}
@@ -185,7 +185,7 @@ export default function MarketplaceGrid() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-full px-5"
+                className="rounded-full bg-card px-5"
                 onClick={() => setActiveFilter('All')}
               >
                 Show all models
@@ -233,7 +233,7 @@ export default function MarketplaceGrid() {
                     {isLive ? (
                       <Badge
                         variant="secondary"
-                        className="gap-1 bg-success-soft px-2.5 py-1 text-[11px] text-success-ink"
+                        className="gap-1 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-800"
                       >
                         <Zap size={11} strokeWidth={2.25} aria-hidden />
                         {model.badge}
@@ -278,8 +278,10 @@ export default function MarketplaceGrid() {
                   </div>
                   <span
                     className={cn(
-                      'inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-primary text-[13px] font-semibold text-primary-foreground',
-                      isSelected && 'ring-2 ring-foreground',
+                      'inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold',
+                      isSelected
+                        ? 'bg-foreground text-background'
+                        : 'border border-border bg-background text-foreground',
                     )}
                   >
                     {isText ? 'Open chat' : 'Use model'}

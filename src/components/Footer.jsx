@@ -8,7 +8,7 @@ export default function Footer() {
           <img src="/assets/logo.png" alt="" />
           <strong>Vince</strong>
         </a>
-        <span>Robinhood Video Generation Marketplace</span>
+        <span>Ethereum Video Generation Marketplace</span>
       </div>
       <div className="footer-col">
         {navLinks.map((link) => (
@@ -37,7 +37,7 @@ export default function Footer() {
         </a>
       </div>
       <div className="footer-bottom">
-        <span>© 2026 Vince · Built on Robinhood Chain</span>
+        <span>© 2026 Vince · Built on Ethereum</span>
         <span>Every model, one balance. Billed per second.</span>
       </div>
     </footer>
