@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 
-export const X_URL = 'https://x.com/lintelligencerh'
+export const X_URL = 'https://x.com/latentxeth?s=11'
 
 export function XLogo({ className }) {
   return (
