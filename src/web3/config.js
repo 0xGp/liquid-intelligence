@@ -16,7 +16,7 @@ const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
 /** Ethereum mainnet only. */
 export const wagmiConfig = getDefaultConfig({
-  appName: 'Liquid Intelligence',
+  appName: 'LatentX Intelligence',
   appDescription: 'AI infrastructure marketplace on Ethereum.',
   appUrl: appUrl || 'https://payrent.app',
   appIcon: `${appUrl}/assets/logo-square.png`,

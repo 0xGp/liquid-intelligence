@@ -7,7 +7,7 @@ export default function BrandLogo({ className, markClassName, nameClassName, onC
       href="#"
       onClick={onClick}
       className={cn('inline-flex items-center gap-2.5 text-foreground', className)}
-      aria-label="Liquid Intelligence home"
+      aria-label="LatentX Intelligence home"
     >
       <span
         className={cn(
@@ -23,7 +23,7 @@ export default function BrandLogo({ className, markClassName, nameClassName, onC
           nameClassName,
         )}
       >
-        Liquid Intelligence
+        LatentX Intelligence
       </span>
     </a>
   )

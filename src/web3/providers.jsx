@@ -23,7 +23,7 @@ export default function Web3Providers({ children }) {
           theme={theme}
           initialChain={ethereum}
           locale="en-US"
-          appInfo={{ appName: 'Liquid Intelligence' }}
+          appInfo={{ appName: 'LatentX Intelligence' }}
         >
           {children}
         </RainbowKitProvider>

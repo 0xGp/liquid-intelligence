@@ -20,7 +20,7 @@ export default function XLink({ className, markClassName }) {
       href={X_URL}
       target="_blank"
       rel="noreferrer noopener"
-      aria-label="Liquid Intelligence on X"
+      aria-label="LatentX Intelligence on X"
       className={cn(
         'inline-flex size-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30',
         className,

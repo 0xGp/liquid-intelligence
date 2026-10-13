@@ -16,7 +16,7 @@ const LINKS = [
   { label: 'How it works', href: '#about' },
 ]
 
-const MARQUEE = Array.from({ length: 8 }, () => 'Liquid Intelligence')
+const MARQUEE = Array.from({ length: 8 }, () => 'LatentX Intelligence')
 const EASE = 'ease-[cubic-bezier(0.25,0.1,0.25,1)]'
 
 export default function LandingFooter() {
