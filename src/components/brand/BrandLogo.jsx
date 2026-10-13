@@ -11,11 +11,11 @@ export default function BrandLogo({ className, markClassName, nameClassName, onC
     >
       <span
         className={cn(
-          'relative size-8 shrink-0 overflow-hidden rounded-full bg-black ring-1 ring-black/10 sm:size-9',
+          'relative grid size-8 shrink-0 place-items-center overflow-hidden rounded-[28%] bg-[#020826] ring-1 ring-black/10 sm:size-9',
           markClassName,
         )}
       >
-        <img src="/assets/liquid-mark.png" alt="" className="size-full object-cover" />
+        <img src="/brand/lx-mark-256.png" alt="" className="size-[74%] object-contain" />
       </span>
       <span
         className={cn(

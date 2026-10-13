@@ -74,9 +74,9 @@ export default function MarketplaceBanner() {
       }}
     >
       <img
-        src="/assets/liquid-mark.png"
+        src="/brand/lx-mark.png"
         alt=""
-        className="pointer-events-none absolute -right-16 top-1/2 size-[20rem] -translate-y-1/2 object-cover opacity-90 sm:-right-10 sm:size-[24rem] lg:right-[-1.5rem] lg:size-[28rem]"
+        className="pointer-events-none absolute -right-24 top-1/2 size-[20rem] -translate-y-1/2 object-contain opacity-40 sm:-right-28 sm:size-[24rem] sm:opacity-90 lg:right-[-5rem] lg:size-[28rem]"
       />
 
       <div className="relative flex min-h-[20rem] flex-col justify-between gap-10 px-6 pb-6 pt-8 sm:min-h-[22rem] sm:px-10 sm:pb-7 sm:pt-10 lg:min-h-[24rem] lg:px-12">

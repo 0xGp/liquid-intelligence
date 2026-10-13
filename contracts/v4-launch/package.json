@@ -1,0 +1,13 @@
+{
+  "name": "latentx-v4-launch",
+  "private": true,
+  "description": "LatentX ERC20 + Uniswap v4 tax hook + atomic launcher (Foundry).",
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vv"
+  },
+  "dependencies": {
+    "@uniswap/v4-core": "1.0.2",
+    "@uniswap/v4-periphery": "1.0.3"
+  }
+}

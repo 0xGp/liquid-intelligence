@@ -1,0 +1,15 @@
+{
+  "buyTaxBps": 300,
+  "devBuyWei": 0,
+  "ethUsdE8": 250386220918,
+  "name": "LAT",
+  "owner": "0x23982B3d1483ACdAd73d48192f3bb4Ae736d1f34",
+  "sellTaxBps": 300,
+  "startMarketCapUsd": 3010,
+  "startTick": 205400,
+  "symbol": "LAT",
+  "token": "0x9dB8D224539d4fF0c7051346228bdd12b604E8Cc",
+  "treasury": "0x23982B3d1483ACdAd73d48192f3bb4Ae736d1f34",
+  "tokenInfo": "0xA91c7222858bfE6e17302641Ac2Db04914f32Fed",
+  "tokenImage": "ipfs://bafkreig7gmjyysktsxmbemugt4ou7acvnkdwarvq5qgdctfxwk4eyy5bde"
+}
